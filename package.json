@@ -1,0 +1,8 @@
+{
+  "name": "catlife-game",
+  "version": "1.0.0",
+  "description": "Special needs cat caretaker text game",
+  "scripts": {
+    "deploy": "netlify deploy --prod --dir ."
+  }
+}
