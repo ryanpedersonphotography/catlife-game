@@ -15,6 +15,189 @@ body {
     padding: 20px;
 }
 
+/* Start Screen Styles */
+.start-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0a0a0a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 255, 0, 0.03) 2px,
+            rgba(0, 255, 0, 0.03) 4px
+        );
+}
+
+.start-container {
+    width: 100%;
+    max-width: 600px;
+    background-color: #000;
+    border: 3px solid #00ff00;
+    border-radius: 10px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+}
+
+.game-title {
+    font-size: 3em;
+    color: #00ff00;
+    text-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+    margin-bottom: 10px;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+    to { text-shadow: 0 0 30px rgba(0, 255, 0, 1), 0 0 40px rgba(0, 255, 0, 0.6); }
+}
+
+.game-subtitle {
+    color: #888;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.start-form {
+    margin-bottom: 30px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label,
+.difficulty-group label {
+    display: block;
+    color: #00ff00;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+#player-name {
+    width: 100%;
+    max-width: 300px;
+    padding: 10px;
+    background-color: #000;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 1.2em;
+    text-align: center;
+    border-radius: 5px;
+}
+
+#player-name:focus {
+    outline: none;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+}
+
+.difficulty-group {
+    margin-bottom: 30px;
+}
+
+.difficulty-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.diff-btn {
+    padding: 10px 20px;
+    background-color: #000;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.3s;
+}
+
+.diff-btn:hover {
+    background-color: rgba(0, 255, 0, 0.1);
+}
+
+.diff-btn.active {
+    background-color: #00ff00;
+    color: #000;
+    font-weight: bold;
+}
+
+.start-game-btn {
+    padding: 15px 40px;
+    background-color: #00ff00;
+    color: #000;
+    border: none;
+    font-family: 'Courier New', monospace;
+    font-size: 1.3em;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    animation: pulse-btn 2s infinite;
+}
+
+@keyframes pulse-btn {
+    0% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+    100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+}
+
+.start-game-btn:hover {
+    background-color: #00cc00;
+}
+
+.high-scores {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+.high-scores h3 {
+    color: #ffff00;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.high-scores-list {
+    text-align: left;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.high-score-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    background-color: rgba(0, 255, 0, 0.05);
+    border-radius: 3px;
+    color: #00ff00;
+}
+
+.high-score-entry:nth-child(1) {
+    color: #ffff00;
+    font-size: 1.1em;
+}
+
+.high-score-entry:nth-child(2) {
+    color: #silver;
+}
+
+.high-score-entry:nth-child(3) {
+    color: #cd7f32;
+}
+
 .game-container {
     width: 100%;
     max-width: 1200px;
@@ -48,74 +231,175 @@ h1 {
 .stats {
     display: flex;
     justify-content: space-around;
-    font-size: 1.2em;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 1.1em;
     padding: 10px;
     background-color: rgba(0, 255, 0, 0.1);
     border-radius: 5px;
 }
 
 .stats span {
-    padding: 5px 15px;
+    padding: 5px 12px;
+    white-space: nowrap;
 }
 
 .rooms-container {
     position: relative;
     width: 100%;
-    max-width: 800px;
-    height: 450px;
+    max-width: 1200px;
+    height: 700px;
     margin: 0 auto 20px;
-    background-color: #0a0a0a;
+    background: 
+        linear-gradient(rgba(0, 100, 0, 0.05) 0%, rgba(0, 50, 0, 0.1) 100%),
+        #0a0a0a;
     border: 3px solid #00ff00;
     border-radius: 5px;
-    background-image: 
-        linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
+    overflow: hidden;
 }
 
 .room {
     position: absolute;
     background-color: rgba(0, 0, 0, 0.8);
     border: 2px solid #00ff00;
-    padding: 15px;
+    padding: 20px;
     transition: all 0.3s;
+    overflow: hidden;
 }
 
 .room#room-kitchen {
-    top: 20px;
-    left: 20px;
-    width: 200px;
-    height: 140px;
+    top: 40px;
+    left: 40px;
+    width: 350px;
+    height: 200px;
 }
 
 .room#room-livingroom {
-    top: 20px;
-    left: 240px;
-    width: 250px;
-    height: 140px;
+    top: 40px;
+    left: 440px;
+    width: 380px;
+    height: 200px;
 }
 
 .room#room-bedroom {
-    top: 20px;
-    right: 20px;
-    width: 200px;
-    height: 140px;
+    top: 260px;
+    left: 40px;
+    width: 350px;
+    height: 200px;
 }
 
 .room#room-bathroom {
-    bottom: 20px;
-    left: 20px;
-    width: 180px;
-    height: 120px;
+    top: 260px;
+    right: 40px;
+    width: 320px;
+    height: 200px;
 }
 
-.room#room-outside {
+/* House structure */
+.house {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 500px;
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 3px solid #00ff00;
+    border-radius: 10px;
+    background-image: 
+        linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Outside area */
+.outside-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.outside-ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 150px;
+    background: 
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 10px,
+            rgba(0, 100, 0, 0.1) 10px,
+            rgba(0, 100, 0, 0.1) 20px
+        );
+    pointer-events: all;
+}
+
+/* Front door */
+.front-door {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 80px;
+    background-color: #654321;
+    border: 2px solid #00ff00;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.front-door.open {
+    background-color: #000;
+}
+
+.front-door::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: #00ff00;
+    border-radius: 50%;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Cat waiting areas */
+.door-inside {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.door-outside {
+    position: absolute;
+    bottom: 95px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Cats outside */
+.cat-outside {
+    position: absolute;
     bottom: 20px;
-    right: 20px;
-    width: 300px;
-    height: 120px;
-    background-color: rgba(0, 100, 0, 0.2);
-    border-style: dashed;
 }
 
 .room::before {
@@ -183,21 +467,23 @@ h1 {
 .cats-in-room {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    align-items: center;
+    gap: 10px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-top: 10px;
 }
 
 .cat-icon {
     background-color: rgba(0, 255, 0, 0.1);
     border: 2px solid #00ff00;
     border-radius: 10px;
-    padding: 8px;
+    padding: 6px;
     cursor: pointer;
     transition: all 0.3s;
     text-align: center;
-    min-width: 70px;
-    font-size: 0.9em;
+    min-width: 65px;
+    max-width: 80px;
+    font-size: 0.85em;
 }
 
 .cat-icon:hover {
@@ -224,6 +510,15 @@ h1 {
     animation: pulse 2s infinite;
 }
 
+.cat-icon.wants-out {
+    animation: bounce 1s infinite;
+}
+
+.cat-icon.wants-in {
+    animation: bounce 0.8s infinite;
+    border-color: #ffff00;
+}
+
 @keyframes pulse {
     0% { opacity: 0.7; }
     50% { opacity: 0.4; }
@@ -236,15 +531,23 @@ h1 {
     75% { transform: translateX(5px); }
 }
 
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
 .cat-emoji {
-    font-size: 1.8em;
+    font-size: 1.6em;
     display: block;
 }
 
 .cat-name {
     color: #00ff00;
-    font-size: 0.9em;
-    margin-top: 5px;
+    font-size: 0.8em;
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .cat-mood {
@@ -348,7 +651,7 @@ h1 {
     font-style: italic;
 }
 
-#energy-display {
+#energy-display, #time-display {
     background-color: rgba(0, 255, 0, 0.1);
     padding: 5px 10px;
     border-radius: 5px;
@@ -357,6 +660,13 @@ h1 {
 #energy-bar {
     font-size: 0.8em;
     letter-spacing: -2px;
+}
+
+#clock-display {
+    font-size: 1em;
+    color: #ffff00;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.3);
 }
 
 .action-panel {
@@ -506,6 +816,15 @@ footer {
     transform: translate(-50%, -50%);
 }
 
+.label-outside {
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5em;
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
 .door {
     position: absolute;
     background-color: #00ff00;
@@ -523,22 +842,54 @@ footer {
 }
 
 .door#door-kitchen-hall {
-    top: 98px;
-    left: 270px;
+    top: 130px;
+    left: 310px;
 }
 
 .door#door-living-hall {
-    top: 180px;
-    left: 470px;
+    top: 230px;
+    left: 500px;
     transform: rotate(90deg);
 }
 
 .door#door-bedroom-hall {
-    top: 200px;
-    left: 320px;
+    top: 230px;
+    left: 400px;
 }
 
-@media (max-width: 768px) {
+/* iPad Pro and standard iPad */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .game-container {
+        max-width: 95%;
+        padding: 25px;
+    }
+    
+    .rooms-container {
+        max-width: 900px;
+        height: 550px;
+    }
+    
+    .room {
+        padding: 18px;
+    }
+    
+    .cat-icon {
+        min-width: 70px;
+        max-width: 85px;
+        padding: 8px;
+    }
+    
+    .game-info {
+        gap: 15px;
+    }
+    
+    .game-text, .action-panel {
+        height: 350px;
+    }
+}
+
+/* Mobile devices */
+@media (max-width: 767px) {
     .rooms-container {
         height: 500px;
         max-width: 100%;

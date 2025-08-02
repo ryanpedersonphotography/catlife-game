@@ -7,7 +7,39 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
+    <!-- Start Screen -->
+    <div id="start-screen" class="start-screen">
+        <div class="start-container">
+            <h1 class="game-title">🐱 CATLIFE 🐱</h1>
+            <h2 class="game-subtitle">Special Needs Cat Caretaker</h2>
+            
+            <div class="start-form">
+                <div class="input-group">
+                    <label for="player-name">Enter Your Name:</label>
+                    <input type="text" id="player-name" maxlength="20" placeholder="Cat Lover" autofocus>
+                </div>
+                
+                <div class="difficulty-group">
+                    <label>Select Difficulty:</label>
+                    <div class="difficulty-buttons">
+                        <button class="diff-btn" data-difficulty="easy">EASY</button>
+                        <button class="diff-btn active" data-difficulty="normal">NORMAL</button>
+                        <button class="diff-btn" data-difficulty="hard">HARD</button>
+                    </div>
+                </div>
+                
+                <button id="start-game-btn" class="start-game-btn">START GAME</button>
+            </div>
+            
+            <div class="high-scores">
+                <h3>🏆 HIGH SCORES 🏆</h3>
+                <div id="high-scores-list" class="high-scores-list"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Container (hidden initially) -->
+    <div class="game-container" id="game-container" style="display: none;">
         <header>
             <h1>🐱 CatLife: Special Needs Cat Caretaker 🐱</h1>
             <div class="stats">
@@ -15,6 +47,7 @@
                 <span id="time">Time: Morning</span>
                 <span id="score">Score: 0</span>
                 <span id="energy-display">Energy: <span id="energy-bar"></span></span>
+                <span id="time-display">Time: <span id="clock-display"></span></span>
             </div>
         </header>
         

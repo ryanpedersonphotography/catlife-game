@@ -1,5 +1,34 @@
 class CatLifeGame {
-    constructor() {
+    constructor(playerName, difficulty) {
+        this.playerName = playerName || 'Cat Lover';
+        this.difficulty = difficulty || 'normal';
+        
+        // Difficulty settings
+        const difficultySettings = {
+            easy: {
+                startEnergy: 150,
+                maxEnergy: 150,
+                energyCostMultiplier: 0.7,
+                accidentChance: 0.5,
+                wanderChance: 0.1
+            },
+            normal: {
+                startEnergy: 100,
+                maxEnergy: 100,
+                energyCostMultiplier: 1,
+                accidentChance: 0.7,
+                wanderChance: 0.15
+            },
+            hard: {
+                startEnergy: 75,
+                maxEnergy: 75,
+                energyCostMultiplier: 1.3,
+                accidentChance: 0.9,
+                wanderChance: 0.25
+            }
+        };
+        
+        this.settings = difficultySettings[this.difficulty];
         this.rooms = {
             kitchen: {
                 name: "Kitchen",
@@ -20,14 +49,17 @@ class CatLifeGame {
                 name: "Bathroom",
                 cats: [],
                 messes: []
-            },
-            outside: {
-                name: "Outside",
-                cats: [],
-                messes: [],
-                isOutside: true
             }
         };
+        
+        // Separate tracking for cats outside and waiting by door
+        this.outside = {
+            cats: [],
+            catsWaitingToGoOut: [],
+            catsWaitingToComeIn: []
+        };
+        
+        this.doorOpen = false;
         
         this.cats = {
             gusty: {
@@ -131,8 +163,8 @@ class CatLifeGame {
             day: 1,
             time: "Morning",
             score: 0,
-            energy: 100,
-            maxEnergy: 100,
+            energy: this.settings.startEnergy,
+            maxEnergy: this.settings.maxEnergy,
             selectedCat: null,
             events: [],
             isGameOver: false
@@ -140,6 +172,23 @@ class CatLifeGame {
         
         this.timeSequence = ["Morning", "Afternoon", "Evening", "Night"];
         this.currentTimeIndex = 0;
+        
+        // Time of day tracking
+        this.timeOfDay = {
+            "Morning": { start: 6, end: 12, current: 6 },
+            "Afternoon": { start: 12, end: 17, current: 12 },
+            "Evening": { start: 17, end: 21, current: 17 },
+            "Night": { start: 21, end: 24, current: 21 }
+        };
+        
+        // Auto time progression settings
+        this.autoProgress = true;
+        this.timeProgressInterval = null;
+        this.timeProgressRate = 60000; // 60 seconds per time period by default
+        
+        // Action-based time progression
+        this.actionsPerTimePeriod = 15; // Actions needed to advance time
+        this.currentActions = 0;
         
         this.init();
     }
@@ -163,12 +212,90 @@ class CatLifeGame {
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleInput();
         });
+        
+        // Start automatic time progression
+        this.startTimeProgression();
+        
+        // Start clock ticker
+        this.startClockTicker();
+    }
+    
+    startTimeProgression() {
+        if (this.autoProgress && !this.gameState.isGameOver) {
+            this.timeProgressInterval = setInterval(() => {
+                if (!this.gameState.isGameOver && this.gameState.time !== "Night") {
+                    // Show warning before auto-advancing
+                    this.displayMessage("⏰ Time is passing... (advancing soon)");
+                    
+                    // Auto advance after a short delay
+                    setTimeout(() => {
+                        if (!this.gameState.isGameOver) {
+                            this.advanceTime();
+                        }
+                    }, 5000); // 5 second warning
+                }
+            }, this.timeProgressRate);
+        }
+    }
+    
+    startClockTicker() {
+        // Update clock every 10 seconds for smooth progression
+        this.clockInterval = setInterval(() => {
+            if (!this.gameState.isGameOver && this.autoProgress) {
+                // Simulate time passing
+                this.currentActions += 0.5; // Small increment for time passage
+                if (this.currentActions > this.actionsPerTimePeriod) {
+                    this.currentActions = this.actionsPerTimePeriod;
+                }
+                this.updateDisplay();
+            }
+        }, 10000); // Every 10 seconds
+    }
+    
+    stopTimeProgression() {
+        if (this.timeProgressInterval) {
+            clearInterval(this.timeProgressInterval);
+            this.timeProgressInterval = null;
+        }
+        if (this.clockInterval) {
+            clearInterval(this.clockInterval);
+            this.clockInterval = null;
+        }
+    }
+    
+    progressTimeWithAction() {
+        this.currentActions++;
+        
+        // Update display immediately
+        this.updateDisplay();
+        
+        // Show progress at milestones
+        const remaining = this.actionsPerTimePeriod - this.currentActions;
+        if (remaining > 0 && remaining % 5 === 0) {
+            this.displayMessage(`⏳ ${remaining} actions until ${this.timeSequence[this.currentTimeIndex + 1] || 'bedtime'}...`);
+        }
+        
+        // Check if enough actions to advance time
+        if (this.currentActions >= this.actionsPerTimePeriod) {
+            this.currentActions = 0;
+            if (this.gameState.time !== "Night") {
+                this.displayMessage("⏰ Time advances due to your activities...");
+                setTimeout(() => {
+                    this.advanceTime();
+                }, 1000);
+            }
+        }
     }
     
     renderRooms() {
         const container = document.getElementById('rooms-container');
         container.innerHTML = '';
         
+        // Create house container
+        const house = document.createElement('div');
+        house.className = 'house';
+        
+        // Render rooms inside the house
         Object.entries(this.rooms).forEach(([roomId, room]) => {
             const roomDiv = document.createElement('div');
             roomDiv.className = 'room';
@@ -192,33 +319,13 @@ class CatLifeGame {
                 const cat = this.cats[catId];
                 if (cat.missing) return; // Skip missing cats
                 
-                const catDiv = document.createElement('div');
-                catDiv.className = 'cat-icon';
-                catDiv.id = `cat-${catId}`;
-                
-                if (this.gameState.selectedCat === catId) {
-                    catDiv.classList.add('selected');
-                }
-                
-                if (cat.happy < 30) {
-                    catDiv.classList.add('unhappy');
-                }
+                const catDiv = this.createCatElement(catId, cat);
                 
                 if (hasConflict && this.isCatInConflict(catId, roomId)) {
                     catDiv.classList.add('fighting');
                 }
                 
-                if (cat.wontComeBack) {
-                    catDiv.classList.add('wandering');
-                }
                 
-                catDiv.innerHTML = `
-                    <div class="cat-emoji">${cat.emoji}</div>
-                    <div class="cat-name">${cat.name}</div>
-                    <div class="cat-mood">${this.getCatMood(cat)}</div>
-                `;
-                
-                catDiv.addEventListener('click', () => this.selectCat(catId));
                 catsContainer.appendChild(catDiv);
             });
             
@@ -249,33 +356,79 @@ class CatLifeGame {
             }
             
             roomDiv.appendChild(catsContainer);
-            container.appendChild(roomDiv);
+            house.appendChild(roomDiv);
         });
         
-        // Add visual elements for blueprint style
-        this.addBlueprintElements(container);
+        // Add front door
+        const frontDoor = document.createElement('div');
+        frontDoor.className = 'front-door' + (this.doorOpen ? ' open' : '');
+        frontDoor.title = this.doorOpen ? 'Click to close door' : 'Click to open door';
+        frontDoor.addEventListener('click', () => this.toggleDoor());
+        house.appendChild(frontDoor);
+        
+        
+        container.appendChild(house);
+        
+        // Create outside area
+        const outsideArea = document.createElement('div');
+        outsideArea.className = 'outside-area';
+        
+        // Add outside label
+        const outsideLabel = document.createElement('div');
+        outsideLabel.className = 'blueprint-label label-outside';
+        outsideLabel.textContent = 'OUTSIDE';
+        outsideArea.appendChild(outsideLabel);
+        
+        // Add ground
+        const ground = document.createElement('div');
+        ground.className = 'outside-ground';
+        outsideArea.appendChild(ground);
+        
+        
+        // Add cats roaming outside
+        this.outside.cats.forEach((catId, index) => {
+            const cat = this.cats[catId];
+            if (!cat.missing) {
+                const catDiv = this.createCatElement(catId, cat);
+                catDiv.classList.add('cat-outside');
+                catDiv.style.left = `${100 + index * 150}px`;
+                if (cat.wontComeBack) {
+                    catDiv.classList.add('wandering');
+                }
+                outsideArea.appendChild(catDiv);
+            }
+        });
+        
+        container.appendChild(outsideArea);
     }
     
-    addBlueprintElements(container) {
-        // Add hallway label
-        const hallwayLabel = document.createElement('div');
-        hallwayLabel.className = 'blueprint-label label-hallway';
-        hallwayLabel.textContent = 'Hallway';
-        container.appendChild(hallwayLabel);
+    createCatElement(catId, cat) {
+        const catDiv = document.createElement('div');
+        catDiv.className = 'cat-icon';
+        catDiv.id = `cat-${catId}`;
         
-        // Add doors
-        const doors = [
-            { id: 'door-kitchen-hall', class: 'door door-horizontal' },
-            { id: 'door-living-hall', class: 'door door-vertical' },
-            { id: 'door-bedroom-hall', class: 'door door-horizontal' }
-        ];
+        if (this.gameState.selectedCat === catId) {
+            catDiv.classList.add('selected');
+        }
         
-        doors.forEach(door => {
-            const doorDiv = document.createElement('div');
-            doorDiv.id = door.id;
-            doorDiv.className = door.class;
-            container.appendChild(doorDiv);
-        });
+        if (cat.happy < 30) {
+            catDiv.classList.add('unhappy');
+        }
+        
+        catDiv.innerHTML = `
+            <div class="cat-emoji">${cat.emoji}</div>
+            <div class="cat-name">${cat.name}</div>
+            <div class="cat-mood">${this.getCatMood(cat)}</div>
+        `;
+        
+        catDiv.addEventListener('click', () => this.selectCat(catId));
+        return catDiv;
+    }
+    
+    toggleDoor() {
+        this.doorOpen = !this.doorOpen;
+        this.displayMessage(this.doorOpen ? "You opened the front door." : "You closed the front door.");
+        this.renderRooms();
     }
     
     checkRoomConflicts(roomId) {
@@ -378,11 +531,12 @@ class CatLifeGame {
             }
         });
         
-        // Let out/Let in button
+        // Handle outside/inside actions
         if (cat.room === 'outside') {
+            // Cat is outside
             const letInBtn = document.createElement('button');
             letInBtn.className = 'action-btn';
-            letInBtn.textContent = '🏠 Let Inside';
+            letInBtn.textContent = '🏠 Let In';
             letInBtn.addEventListener('click', () => {
                 this.letCatIn(catId);
                 this.showCatActions(catId);
@@ -399,19 +553,20 @@ class CatLifeGame {
                 actionsDiv.appendChild(warningDiv);
             }
         } else {
-            const letOutBtn = document.createElement('button');
-            letOutBtn.className = 'action-btn';
-            letOutBtn.textContent = '🌳 Let Outside';
+            // Cat is inside
+            const putOutBtn = document.createElement('button');
+            putOutBtn.className = 'action-btn';
+            putOutBtn.textContent = '🌳 Put Outside';
             // Disable letting cats out in the evening
             if (this.gameState.time === 'Evening' || this.gameState.time === 'Night') {
-                letOutBtn.disabled = true;
-                letOutBtn.textContent = '🌙 Too Late to Go Out';
+                putOutBtn.disabled = true;
+                putOutBtn.textContent = '🌙 Too Late to Go Out';
             }
-            letOutBtn.addEventListener('click', () => {
-                this.letCatOut(catId);
+            putOutBtn.addEventListener('click', () => {
+                this.putCatOutside(catId);
                 this.showCatActions(catId);
             });
-            actionsDiv.appendChild(letOutBtn);
+            actionsDiv.appendChild(putOutBtn);
         }
         
         // Cat info
@@ -465,13 +620,15 @@ class CatLifeGame {
         this.useEnergy(3, 'moving cat');
         this.gameState.score += 2;
         
+        // Progress time with action
+        this.progressTimeWithAction();
+        
         this.renderRooms();
         this.checkConflicts();
     }
     
-    letCatOut(catId) {
-        // Check energy first
-        if (this.gameState.energy < 2) {
+    putCatOutside(catId) {
+        if (this.gameState.energy < 3) {
             this.displayMessage("You're too tired to let cats out...");
             return;
         }
@@ -483,24 +640,26 @@ class CatLifeGame {
         this.rooms[oldRoom].cats = this.rooms[oldRoom].cats.filter(id => id !== catId);
         
         // Add to outside
+        this.outside.cats.push(catId);
         cat.room = 'outside';
-        this.rooms.outside.cats.push(catId);
         
-        this.displayMessage(`You let ${cat.name} outside to explore.`);
-        this.useEnergy(2, 'letting cat out');
+        this.displayMessage(`You put ${cat.name} outside to explore.`);
+        this.useEnergy(3, 'putting cat outside');
         
         // Risk of cat not coming back
-        if (Math.random() < 0.15) {
+        if (Math.random() < this.settings.wanderChance) {
             cat.wontComeBack = true;
             this.displayMessage(`⚠️ ${cat.name} seems very interested in something far away...`);
         }
+        
+        // Progress time with action
+        this.progressTimeWithAction();
         
         this.renderRooms();
     }
     
     letCatIn(catId) {
-        // Check energy first
-        if (this.gameState.energy < 2) {
+        if (this.gameState.energy < 3) {
             this.displayMessage("You're too tired to let cats in...");
             return;
         }
@@ -510,25 +669,31 @@ class CatLifeGame {
         // Check if cat won't come back
         if (cat.wontComeBack) {
             this.displayMessage(`😿 ${cat.name} doesn't come when called! They've wandered off!`);
-            this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+            this.outside.cats = this.outside.cats.filter(id => id !== catId);
+            this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
             cat.room = 'missing';
             cat.missing = true;
             this.gameState.score -= 20;
-            this.useEnergy(2, 'trying to call cat');
+            this.useEnergy(3, 'trying to call cat');
             this.renderRooms();
             return;
         }
         
         // Remove from outside
-        this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+        this.outside.cats = this.outside.cats.filter(id => id !== catId);
+        this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
         
         // Add to kitchen by default
         cat.room = 'kitchen';
         this.rooms.kitchen.cats.push(catId);
+        cat.wontComeBack = false;
         
         this.displayMessage(`${cat.name} comes inside happily.`);
-        this.useEnergy(2, 'letting cat in');
+        this.useEnergy(3, 'letting cat in');
         this.gameState.score += 3;
+        
+        // Progress time with action
+        this.progressTimeWithAction();
         
         this.renderRooms();
         this.checkConflicts();
@@ -548,14 +713,16 @@ class CatLifeGame {
             if (cat.wontComeBack && Math.random() < 0.3) {
                 // Still might not find them
                 this.displayMessage(`😿 You searched everywhere but couldn't find ${cat.name}!`);
-                this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+                this.outside.cats = this.outside.cats.filter(id => id !== catId);
+                this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
                 cat.room = 'missing';
                 cat.missing = true;
                 this.gameState.score -= 25;
             } else {
                 // Found the cat!
                 this.displayMessage(`😅 You found ${cat.name} hiding under a bush!`);
-                this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+                this.outside.cats = this.outside.cats.filter(id => id !== catId);
+                this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
                 cat.room = 'bedroom'; // Put them in bedroom for the night
                 this.rooms.bedroom.cats.push(catId);
                 cat.wontComeBack = false;
@@ -565,7 +732,8 @@ class CatLifeGame {
             // Not enough energy to search
             this.displayMessage(`💀 You're too exhausted to search properly...`);
             this.displayMessage(`😿 ${cat.name} is lost for the night!`);
-            this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+            this.outside.cats = this.outside.cats.filter(id => id !== catId);
+            this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
             cat.room = 'missing';
             cat.missing = true;
             this.gameState.score -= 30;
@@ -624,6 +792,35 @@ class CatLifeGame {
             case 'skip':
                 this.advanceTime();
                 break;
+            case 'pause':
+                this.stopTimeProgression();
+                this.autoProgress = false;
+                this.displayMessage("⏸️ Time progression paused. Type 'play' to resume.");
+                break;
+            case 'play':
+                this.autoProgress = true;
+                this.startTimeProgression();
+                this.startClockTicker();
+                this.displayMessage("▶️ Time progression resumed.");
+                break;
+            case 'speed':
+                if (parts[1] === 'fast') {
+                    this.timeProgressRate = 30000; // 30 seconds
+                    this.displayMessage("⏩ Time now progresses faster (30 seconds per period).");
+                } else if (parts[1] === 'normal') {
+                    this.timeProgressRate = 60000; // 60 seconds
+                    this.displayMessage("▶️ Time progression set to normal (60 seconds per period).");
+                } else if (parts[1] === 'slow') {
+                    this.timeProgressRate = 120000; // 120 seconds
+                    this.displayMessage("⏪ Time now progresses slower (2 minutes per period).");
+                } else {
+                    this.displayMessage("Usage: speed [fast/normal/slow]");
+                }
+                if (this.autoProgress) {
+                    this.stopTimeProgression();
+                    this.startTimeProgression();
+                }
+                break;
             default:
                 this.displayMessage("I don't understand that command. Type 'help' for options.");
         }
@@ -666,6 +863,9 @@ class CatLifeGame {
         this.displayMessage(`You fed ${cat.name}. They purr contentedly.`);
         this.useEnergy(5, 'feeding');
         
+        // Progress time with action
+        this.progressTimeWithAction();
+        
         // Gusty steals food if in the same room as another fed cat
         if (catId === 'gusty' && Math.random() < 0.7) {
             const room = this.rooms[cat.room];
@@ -697,6 +897,9 @@ class CatLifeGame {
             this.gameState.score += 3;
             this.displayMessage(`You cleaned up the ${mess} in the ${room.name}!`);
             this.useEnergy(4, 'cleaning');
+            
+            // Progress time with action
+            this.progressTimeWithAction();
             
             // Make cats happier when messes are cleaned
             room.cats.forEach(catId => {
@@ -756,13 +959,17 @@ class CatLifeGame {
         
         this.displayMessage(`You play with ${cat.name}. They seem much happier!`);
         this.useEnergy(8, 'playing');
+        
+        // Progress time with action
+        this.progressTimeWithAction();
+        
         this.renderRooms();
     }
     
     triggerRandomEvent() {
         const events = [
             () => {
-                if (Math.random() < 0.7 && this.rooms[this.cats.snicker.room].messes.length < 3) {
+                if (Math.random() < this.settings.accidentChance && this.rooms[this.cats.snicker.room].messes.length < 3) {
                     const room = this.rooms[this.cats.snicker.room];
                     room.messes.push("💩 poop");
                     this.displayMessage(`💩 Oh no! Snicker has pooped in the ${room.name}!`);
@@ -771,7 +978,7 @@ class CatLifeGame {
                 }
             },
             () => {
-                if (Math.random() < 0.7 && this.rooms[this.cats.scampi.room].messes.length < 3) {
+                if (Math.random() < this.settings.accidentChance && this.rooms[this.cats.scampi.room].messes.length < 3) {
                     const room = this.rooms[this.cats.scampi.room];
                     room.messes.push("💦 pee");
                     this.displayMessage(`💦 Uh oh! Scampi has peed in the ${room.name}!`);
@@ -803,6 +1010,32 @@ class CatLifeGame {
                         this.cats.tink.happy -= 10;
                     }
                 }
+            },
+            () => {
+                // Random cat meows to go outside
+                const insideCats = [];
+                Object.entries(this.rooms).forEach(([roomId, room]) => {
+                    room.cats.forEach(catId => {
+                        insideCats.push(catId);
+                    });
+                });
+                
+                if (insideCats.length > 0 && Math.random() < 0.3) {
+                    const catId = insideCats[Math.floor(Math.random() * insideCats.length)];
+                    const cat = this.cats[catId];
+                    this.displayMessage(`🚪 ${cat.name} is meowing at the door - they want to go outside!`);
+                    cat.happy -= 5;
+                }
+            },
+            () => {
+                // Random outside cat wants to come in
+                const outsideCats = this.outside.cats.filter(catId => !this.cats[catId].wontComeBack);
+                
+                if (outsideCats.length > 0 && Math.random() < 0.4) {
+                    const catId = outsideCats[Math.floor(Math.random() * outsideCats.length)];
+                    const cat = this.cats[catId];
+                    this.displayMessage(`🚪 ${cat.name} is scratching at the door to come inside!`);
+                }
             }
         ];
         
@@ -822,6 +1055,9 @@ class CatLifeGame {
         this.gameState.time = this.timeSequence[this.currentTimeIndex];
         this.displayMessage(`\n⏰ Time advances to ${this.gameState.time}.`);
         
+        // Reset action counter for new time period
+        this.currentActions = 0;
+        
         // Regenerate some energy with rest
         const energyGain = 15;
         this.gameState.energy = Math.min(this.gameState.maxEnergy, this.gameState.energy + energyGain);
@@ -838,7 +1074,7 @@ class CatLifeGame {
             Object.values(this.cats).forEach(cat => cat.fed = false);
             
             // Check for cats outside
-            const catsOutside = this.rooms.outside.cats.filter(catId => !this.cats[catId].missing);
+            const catsOutside = this.outside.cats.filter(catId => !this.cats[catId].missing);
             if (catsOutside.length > 0) {
                 this.displayMessage(`⚠️ WARNING: ${catsOutside.length} cat(s) are still outside! It's getting dark!`);
                 catsOutside.forEach(catId => {
@@ -851,7 +1087,7 @@ class CatLifeGame {
             this.displayMessage("🌙 The cats are settling down for the night...");
             
             // Force search for any cats still outside
-            const catsOutside = this.rooms.outside.cats.filter(catId => !this.cats[catId].missing);
+            const catsOutside = this.outside.cats.filter(catId => !this.cats[catId].missing);
             if (catsOutside.length > 0) {
                 this.displayMessage(`😱 Oh no! ${catsOutside.length} cat(s) are still outside at bedtime!`);
                 this.displayMessage("You must go search for them!");
@@ -904,6 +1140,9 @@ class CatLifeGame {
         this.displayMessage("\n🎮 Thanks for playing! Refresh to play again.");
         this.gameState.isGameOver = true;
         
+        // Stop time progression when game ends
+        this.stopTimeProgression();
+        
         this.updateDisplay();
     }
     
@@ -930,7 +1169,19 @@ Available Commands:
 - play [cat name] - Play with a cat (8 energy)
 - move [cat] to [room] - Move a cat to another room (3 energy)
 - skip - Skip to next time period
+- pause - Pause automatic time progression
+- play - Resume automatic time progression
+- speed [fast/normal/slow] - Adjust time speed
 - help - Show this help message
+
+Time System:
+- Clock shows actual time of day (6 AM - 12 AM)
+- Time advances with actions and automatically
+- Morning: 6 AM - 12 PM
+- Afternoon: 12 PM - 5 PM  
+- Evening: 5 PM - 9 PM
+- Night: 9 PM - 12 AM
+- Use 'pause' to stop time progression
 
 Energy System:
 - Start with 100 energy each day
@@ -938,7 +1189,11 @@ Energy System:
 - Gain 15 energy when time advances
 - Game over if energy reaches 0!
 
-Outdoor Cats:
+Outdoor System:
+- Send cats to door when they want out (2 energy)
+- Click door to open/close it (1 energy)
+- Call outside cats to door (3 energy)
+- Cats waiting at door will go through when opened
 - Cats can wander off when outside (15% chance)
 - Evening warning if cats are outside
 - Can't let cats out after Evening
@@ -982,6 +1237,25 @@ Cat Conflicts:
         
         energyBar.textContent = energyDisplay;
         
+        // Update clock display
+        const clockDisplay = document.getElementById('clock-display');
+        const currentPeriod = this.gameState.time;
+        const timeData = this.timeOfDay[currentPeriod];
+        
+        // Calculate current hour based on progress
+        const periodDuration = timeData.end - timeData.start;
+        const progressInPeriod = this.currentActions / this.actionsPerTimePeriod;
+        const hoursProgressed = Math.floor(periodDuration * progressInPeriod);
+        const currentHour = timeData.start + hoursProgressed;
+        const minutes = Math.floor((progressInPeriod * periodDuration - hoursProgressed) * 60);
+        
+        // Format time
+        const displayHour = currentHour > 12 ? currentHour - 12 : (currentHour === 0 ? 12 : currentHour);
+        const amPm = currentHour >= 12 ? 'PM' : 'AM';
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        
+        clockDisplay.textContent = `🕐 ${displayHour}:${formattedMinutes} ${amPm}`;
+        
         // Check for energy depletion
         if (this.gameState.energy <= 0 && !this.gameState.isGameOver) {
             this.energyDepleted();
@@ -993,20 +1267,117 @@ Cat Conflicts:
         this.displayMessage("The cats will have to fend for themselves today.");
         this.displayMessage("\n🎮 Game Over! Your final score: " + this.gameState.score);
         this.gameState.isGameOver = true;
+        
+        // Stop time progression when game ends
+        this.stopTimeProgression();
     }
     
     useEnergy(amount, action) {
-        this.gameState.energy -= amount;
+        const actualCost = Math.ceil(amount * this.settings.energyCostMultiplier);
+        this.gameState.energy -= actualCost;
         if (this.gameState.energy < 0) this.gameState.energy = 0;
         
-        if (amount > 0) {
-            this.displayMessage(`[-${amount} energy]`, 'energy');
+        if (actualCost > 0) {
+            this.displayMessage(`[-${actualCost} energy]`, 'energy');
         }
         
         this.updateDisplay();
     }
 }
 
+// High Score Management
+class HighScoreManager {
+    constructor() {
+        this.highScores = this.loadHighScores();
+    }
+    
+    loadHighScores() {
+        const stored = localStorage.getItem('catlife-highscores');
+        return stored ? JSON.parse(stored) : [];
+    }
+    
+    saveHighScores() {
+        localStorage.setItem('catlife-highscores', JSON.stringify(this.highScores));
+    }
+    
+    addScore(name, score, difficulty) {
+        this.highScores.push({
+            name: name,
+            score: score,
+            difficulty: difficulty,
+            date: new Date().toLocaleDateString()
+        });
+        
+        // Sort by score descending
+        this.highScores.sort((a, b) => b.score - a.score);
+        
+        // Keep only top 10
+        this.highScores = this.highScores.slice(0, 10);
+        
+        this.saveHighScores();
+    }
+    
+    displayHighScores() {
+        const container = document.getElementById('high-scores-list');
+        container.innerHTML = '';
+        
+        if (this.highScores.length === 0) {
+            container.innerHTML = '<div style="color: #888; text-align: center;">No high scores yet!</div>';
+            return;
+        }
+        
+        this.highScores.forEach((score, index) => {
+            const entry = document.createElement('div');
+            entry.className = 'high-score-entry';
+            entry.innerHTML = `
+                <span>${index + 1}. ${score.name} (${score.difficulty})</span>
+                <span>${score.score}</span>
+            `;
+            container.appendChild(entry);
+        });
+    }
+}
+
+// Start Screen Handler
 document.addEventListener('DOMContentLoaded', () => {
-    new CatLifeGame();
+    const highScoreManager = new HighScoreManager();
+    highScoreManager.displayHighScores();
+    
+    let selectedDifficulty = 'normal';
+    let gameInstance = null;
+    
+    // Difficulty button handlers
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedDifficulty = btn.dataset.difficulty;
+        });
+    });
+    
+    // Start game button
+    document.getElementById('start-game-btn').addEventListener('click', () => {
+        const playerName = document.getElementById('player-name').value.trim() || 'Cat Lover';
+        
+        // Hide start screen
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'block';
+        
+        // Create new game instance
+        gameInstance = new CatLifeGame(playerName, selectedDifficulty);
+        
+        // Override endDay to save high score
+        const originalEndDay = gameInstance.endDay.bind(gameInstance);
+        gameInstance.endDay = function() {
+            originalEndDay();
+            highScoreManager.addScore(playerName, this.gameState.score, selectedDifficulty);
+        };
+    });
+    
+    // Allow Enter key to start game
+    document.getElementById('player-name').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('start-game-btn').click();
+        }
+    });
 });
