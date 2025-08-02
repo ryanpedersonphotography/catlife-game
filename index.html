@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatLife - Special Needs Cat Caretaker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>🐱 CatLife: Special Needs Cat Caretaker 🐱</h1>
+            <div class="stats">
+                <span id="day">Day: 1</span>
+                <span id="time">Time: Morning</span>
+                <span id="score">Score: 0</span>
+            </div>
+        </header>
+        
+        <main>
+            <div class="game-display">
+                <div id="game-text" class="game-text"></div>
+                <div id="cat-status" class="cat-status"></div>
+            </div>
+            
+            <div class="input-section">
+                <input type="text" id="player-input" placeholder="Type your action..." autofocus>
+                <button id="submit-btn">Submit</button>
+            </div>
+            
+            <div class="help-section">
+                <h3>Commands:</h3>
+                <p>feed [cat name] - Feed a specific cat</p>
+                <p>clean [area] - Clean up messes (litter, food, etc)</p>
+                <p>play [cat name] - Play with a cat</p>
+                <p>separate [cat1] [cat2] - Separate fighting cats</p>
+                <p>help - Show available commands</p>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Take care of your special needs cats throughout the day!</p>
+        </footer>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
