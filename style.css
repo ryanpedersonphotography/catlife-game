@@ -315,6 +315,23 @@ h1 {
     font-weight: bold;
 }
 
+.message.energy {
+    color: #ff6666;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+#energy-display {
+    background-color: rgba(0, 255, 0, 0.1);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+#energy-bar {
+    font-size: 0.8em;
+    letter-spacing: -2px;
+}
+
 .action-panel {
     background-color: #000;
     border: 1px solid #00ff00;

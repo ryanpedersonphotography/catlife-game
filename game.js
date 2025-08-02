@@ -88,6 +88,8 @@ class CatLifeGame {
             day: 1,
             time: "Morning",
             score: 0,
+            energy: 100,
+            maxEnergy: 100,
             selectedCat: null,
             events: [],
             isGameOver: false
@@ -359,6 +361,11 @@ class CatLifeGame {
     }
     
     moveCat(catId, newRoomId) {
+        // Check energy first
+        if (this.gameState.energy < 3) {
+            this.displayMessage("You're too tired to move cats around...");
+            return;
+        }
         const cat = this.cats[catId];
         const oldRoom = cat.room;
         
@@ -370,6 +377,7 @@ class CatLifeGame {
         this.rooms[newRoomId].cats.push(catId);
         
         this.displayMessage(`You moved ${cat.name} to the ${this.rooms[newRoomId].name}.`);
+        this.useEnergy(3, 'moving cat');
         this.gameState.score += 2;
         
         this.renderRooms();
@@ -438,6 +446,11 @@ class CatLifeGame {
     }
     
     feedCat(catId) {
+        // Check energy first
+        if (this.gameState.energy < 5) {
+            this.displayMessage("You're too tired to feed the cats...");
+            return;
+        }
         // Handle both cat ID and cat name
         if (!this.cats[catId]) {
             catId = Object.keys(this.cats).find(id => 
@@ -463,6 +476,7 @@ class CatLifeGame {
         this.gameState.score += 5;
         
         this.displayMessage(`You fed ${cat.name}. They purr contentedly.`);
+        this.useEnergy(5, 'feeding');
         
         // Gusty steals food if in the same room as another fed cat
         if (catId === 'gusty' && Math.random() < 0.7) {
@@ -482,6 +496,11 @@ class CatLifeGame {
     }
     
     cleanMess(roomId, messIndex) {
+        // Check energy first
+        if (this.gameState.energy < 4) {
+            this.displayMessage("You're too tired to clean up messes...");
+            return;
+        }
         const room = this.rooms[roomId];
         if (room.messes[messIndex]) {
             const mess = room.messes[messIndex];
@@ -489,6 +508,7 @@ class CatLifeGame {
             
             this.gameState.score += 3;
             this.displayMessage(`You cleaned up the ${mess} in the ${room.name}!`);
+            this.useEnergy(4, 'cleaning');
             
             // Make cats happier when messes are cleaned
             room.cats.forEach(catId => {
@@ -524,6 +544,11 @@ class CatLifeGame {
     }
     
     playWithCat(catId) {
+        // Check energy first
+        if (this.gameState.energy < 8) {
+            this.displayMessage("You're too tired to play with the cats...");
+            return;
+        }
         // Handle both cat ID and cat name
         if (!this.cats[catId]) {
             catId = Object.keys(this.cats).find(id => 
@@ -542,6 +567,7 @@ class CatLifeGame {
         this.gameState.score += 3;
         
         this.displayMessage(`You play with ${cat.name}. They seem much happier!`);
+        this.useEnergy(8, 'playing');
         this.renderRooms();
     }
     
@@ -595,6 +621,11 @@ class CatLifeGame {
         
         this.gameState.time = this.timeSequence[this.currentTimeIndex];
         this.displayMessage(`\n⏰ Time advances to ${this.gameState.time}.`);
+        
+        // Regenerate some energy with rest
+        const energyGain = 15;
+        this.gameState.energy = Math.min(this.gameState.maxEnergy, this.gameState.energy + energyGain);
+        this.displayMessage(`💚 You rest a bit and gain ${energyGain} energy.`);
         
         Object.values(this.cats).forEach(cat => {
             cat.hunger += 15;
@@ -673,12 +704,18 @@ class CatLifeGame {
         const helpText = `
 Available Commands:
 - Click on a cat to see actions
-- feed [cat name] - Feed a specific cat
-- clean [room/all] - Clean up messes
-- play [cat name] - Play with a cat
-- move [cat] to [room] - Move a cat to another room
+- feed [cat name] - Feed a specific cat (5 energy)
+- clean [room/all] - Clean up messes (4 energy)
+- play [cat name] - Play with a cat (8 energy)
+- move [cat] to [room] - Move a cat to another room (3 energy)
 - skip - Skip to next time period
 - help - Show this help message
+
+Energy System:
+- Start with 100 energy each day
+- Actions cost energy
+- Gain 15 energy when time advances
+- Game over if energy reaches 0!
 
 Cat Conflicts:
 - Gusty & Snicker don't get along (food issues)
@@ -701,6 +738,45 @@ Cat Conflicts:
         document.getElementById('day').textContent = `Day: ${this.gameState.day}`;
         document.getElementById('time').textContent = `Time: ${this.gameState.time}`;
         document.getElementById('score').textContent = `Score: ${this.gameState.score}`;
+        
+        // Update energy bar
+        const energyBar = document.getElementById('energy-bar');
+        const energyPercent = (this.gameState.energy / this.gameState.maxEnergy) * 100;
+        const energyBlocks = Math.ceil(energyPercent / 10);
+        
+        let energyDisplay = '';
+        for (let i = 0; i < 10; i++) {
+            if (i < energyBlocks) {
+                energyDisplay += energyPercent > 30 ? '🟩' : energyPercent > 10 ? '🟨' : '🟥';
+            } else {
+                energyDisplay += '⬜';
+            }
+        }
+        
+        energyBar.textContent = energyDisplay;
+        
+        // Check for energy depletion
+        if (this.gameState.energy <= 0 && !this.gameState.isGameOver) {
+            this.energyDepleted();
+        }
+    }
+    
+    energyDepleted() {
+        this.displayMessage("\n💀 You've run out of energy! You collapse from exhaustion...");
+        this.displayMessage("The cats will have to fend for themselves today.");
+        this.displayMessage("\n🎮 Game Over! Your final score: " + this.gameState.score);
+        this.gameState.isGameOver = true;
+    }
+    
+    useEnergy(amount, action) {
+        this.gameState.energy -= amount;
+        if (this.gameState.energy < 0) this.gameState.energy = 0;
+        
+        if (amount > 0) {
+            this.displayMessage(`[-${amount} energy]`, 'energy');
+        }
+        
+        this.updateDisplay();
     }
 }
 
