@@ -388,10 +388,25 @@ class CatLifeGame {
                 this.showCatActions(catId);
             });
             actionsDiv.appendChild(letInBtn);
+            
+            // Warning if it's evening
+            if (this.gameState.time === 'Evening') {
+                const warningDiv = document.createElement('div');
+                warningDiv.style.color = '#ff6666';
+                warningDiv.style.marginTop = '10px';
+                warningDiv.style.fontSize = '0.9em';
+                warningDiv.textContent = '⚠️ It\'s getting dark! Bring them in soon!';
+                actionsDiv.appendChild(warningDiv);
+            }
         } else {
             const letOutBtn = document.createElement('button');
             letOutBtn.className = 'action-btn';
             letOutBtn.textContent = '🌳 Let Outside';
+            // Disable letting cats out in the evening
+            if (this.gameState.time === 'Evening' || this.gameState.time === 'Night') {
+                letOutBtn.disabled = true;
+                letOutBtn.textContent = '🌙 Too Late to Go Out';
+            }
             letOutBtn.addEventListener('click', () => {
                 this.letCatOut(catId);
                 this.showCatActions(catId);
@@ -517,6 +532,44 @@ class CatLifeGame {
         
         this.renderRooms();
         this.checkConflicts();
+    }
+    
+    searchForCat(catId) {
+        const cat = this.cats[catId];
+        const searchCost = 15; // Much higher energy cost for searching at night
+        
+        this.displayMessage(`🔦 You grab a flashlight and go outside to search for ${cat.name}...`);
+        
+        // Check if you have enough energy
+        if (this.gameState.energy >= searchCost) {
+            this.useEnergy(searchCost, 'searching at night');
+            
+            // Higher chance of finding the cat when actively searching
+            if (cat.wontComeBack && Math.random() < 0.3) {
+                // Still might not find them
+                this.displayMessage(`😿 You searched everywhere but couldn't find ${cat.name}!`);
+                this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+                cat.room = 'missing';
+                cat.missing = true;
+                this.gameState.score -= 25;
+            } else {
+                // Found the cat!
+                this.displayMessage(`😅 You found ${cat.name} hiding under a bush!`);
+                this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+                cat.room = 'bedroom'; // Put them in bedroom for the night
+                this.rooms.bedroom.cats.push(catId);
+                cat.wontComeBack = false;
+                this.gameState.score += 5;
+            }
+        } else {
+            // Not enough energy to search
+            this.displayMessage(`💀 You're too exhausted to search properly...`);
+            this.displayMessage(`😿 ${cat.name} is lost for the night!`);
+            this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+            cat.room = 'missing';
+            cat.missing = true;
+            this.gameState.score -= 30;
+        }
     }
     
     handleInput() {
@@ -783,10 +836,31 @@ class CatLifeGame {
         if (this.gameState.time === "Evening") {
             this.displayMessage("The cats are getting sleepy. One more feeding before bed!");
             Object.values(this.cats).forEach(cat => cat.fed = false);
+            
+            // Check for cats outside
+            const catsOutside = this.rooms.outside.cats.filter(catId => !this.cats[catId].missing);
+            if (catsOutside.length > 0) {
+                this.displayMessage(`⚠️ WARNING: ${catsOutside.length} cat(s) are still outside! It's getting dark!`);
+                catsOutside.forEach(catId => {
+                    this.displayMessage(`🌙 ${this.cats[catId].name} is still outside!`);
+                });
+            }
         }
         
         if (this.gameState.time === "Night") {
             this.displayMessage("🌙 The cats are settling down for the night...");
+            
+            // Force search for any cats still outside
+            const catsOutside = this.rooms.outside.cats.filter(catId => !this.cats[catId].missing);
+            if (catsOutside.length > 0) {
+                this.displayMessage(`😱 Oh no! ${catsOutside.length} cat(s) are still outside at bedtime!`);
+                this.displayMessage("You must go search for them!");
+                
+                catsOutside.forEach(catId => {
+                    this.searchForCat(catId);
+                });
+            }
+            
             this.endDay();
         }
         
@@ -860,9 +934,15 @@ Available Commands:
 
 Energy System:
 - Start with 100 energy each day
-- Actions cost energy
+- Actions cost energy (letting out/in: 2, searching at night: 15!)
 - Gain 15 energy when time advances
 - Game over if energy reaches 0!
+
+Outdoor Cats:
+- Cats can wander off when outside (15% chance)
+- Evening warning if cats are outside
+- Can't let cats out after Evening
+- At Night, you MUST search for cats still outside (15 energy each!)
 
 Cat Conflicts:
 - Gusty & Snicker don't get along (food issues)
