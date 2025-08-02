@@ -213,6 +213,17 @@ class CatLifeGame {
             if (e.key === 'Enter') this.handleInput();
         });
         
+        // Popup event listeners
+        const closePopupBtn = document.getElementById('close-popup');
+        closePopupBtn.addEventListener('click', () => this.closePopup());
+        
+        const popupOverlay = document.getElementById('cat-popup');
+        popupOverlay.addEventListener('click', (e) => {
+            if (e.target === popupOverlay) {
+                this.closePopup();
+            }
+        });
+        
         // Start automatic time progression
         this.startTimeProgression();
         
@@ -485,15 +496,37 @@ class CatLifeGame {
     selectCat(catId) {
         this.gameState.selectedCat = catId;
         this.renderRooms();
-        this.showCatActions(catId);
+        this.showCatPopup(catId);
     }
     
-    showCatActions(catId) {
+    showCatPopup(catId) {
         const cat = this.cats[catId];
-        const selectedCatSpan = document.getElementById('selected-cat');
-        selectedCatSpan.textContent = cat.name;
+        const popup = document.getElementById('cat-popup');
         
-        const actionsDiv = document.getElementById('action-buttons');
+        // Update popup content
+        document.getElementById('popup-cat-name').textContent = cat.name;
+        document.getElementById('popup-cat-emoji').textContent = cat.emoji;
+        document.getElementById('popup-cat-mood').textContent = `Mood: ${this.getCatMood(cat)}`;
+        document.getElementById('popup-cat-location').textContent = `Location: ${cat.room === 'outside' ? 'Outside' : this.rooms[cat.room].name}`;
+        document.getElementById('popup-cat-trait').textContent = `Trait: ${cat.trait}`;
+        
+        // Show popup
+        popup.classList.add('active');
+        
+        // Generate action buttons
+        this.generatePopupActions(catId);
+    }
+    
+    closePopup() {
+        const popup = document.getElementById('cat-popup');
+        popup.classList.remove('active');
+        this.gameState.selectedCat = null;
+        this.renderRooms();
+    }
+    
+    generatePopupActions(catId) {
+        const cat = this.cats[catId];
+        const actionsDiv = document.getElementById('popup-action-buttons');
         actionsDiv.innerHTML = '';
         
         // Feed button
@@ -503,7 +536,7 @@ class CatLifeGame {
         feedBtn.disabled = cat.fed && this.gameState.time === "Morning";
         feedBtn.addEventListener('click', () => {
             this.feedCat(catId);
-            this.showCatActions(catId);
+            this.closePopup();
         });
         actionsDiv.appendChild(feedBtn);
         
@@ -513,7 +546,7 @@ class CatLifeGame {
         playBtn.textContent = '🎾 Play';
         playBtn.addEventListener('click', () => {
             this.playWithCat(catId);
-            this.showCatActions(catId);
+            this.closePopup();
         });
         actionsDiv.appendChild(playBtn);
         
@@ -525,7 +558,7 @@ class CatLifeGame {
                 moveBtn.textContent = `📦 Move to ${room.name}`;
                 moveBtn.addEventListener('click', () => {
                     this.moveCat(catId, roomId);
-                    this.showCatActions(catId);
+                    this.closePopup();
                 });
                 actionsDiv.appendChild(moveBtn);
             }
@@ -539,7 +572,7 @@ class CatLifeGame {
             letInBtn.textContent = '🏠 Let In';
             letInBtn.addEventListener('click', () => {
                 this.letCatIn(catId);
-                this.showCatActions(catId);
+                this.closePopup();
             });
             actionsDiv.appendChild(letInBtn);
             
@@ -564,24 +597,10 @@ class CatLifeGame {
             }
             putOutBtn.addEventListener('click', () => {
                 this.putCatOutside(catId);
-                this.showCatActions(catId);
+                this.closePopup();
             });
             actionsDiv.appendChild(putOutBtn);
         }
-        
-        // Cat info
-        const infoDiv = document.createElement('div');
-        infoDiv.style.marginTop = '15px';
-        infoDiv.style.color = '#888';
-        infoDiv.style.fontSize = '0.9em';
-        infoDiv.style.lineHeight = '1.4';
-        infoDiv.innerHTML = `
-            <p style="margin: 5px 0; word-wrap: break-word;">Trait: ${cat.trait}</p>
-            <p style="margin: 5px 0;">Happiness: ${this.getHappyBar(cat.happy)}</p>
-            <p style="margin: 5px 0;">Hunger: ${this.getHungerBar(cat.hunger)}</p>
-            ${cat.conflicts.length > 0 ? `<p style="margin: 5px 0; word-wrap: break-word;">⚠️ Conflicts: ${cat.conflicts.map(c => this.cats[c].name).join(', ')}</p>` : ''}
-        `;
-        actionsDiv.appendChild(infoDiv);
     }
     
     getHappyBar(happiness) {

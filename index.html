@@ -57,8 +57,29 @@
             <div class="game-info">
                 <div id="game-text" class="game-text"></div>
                 <div class="action-panel" id="action-panel">
-                    <h3>Selected Cat: <span id="selected-cat">None</span></h3>
-                    <div class="action-buttons" id="action-buttons"></div>
+                    <h3>Click on a cat to see actions</h3>
+                    <p class="action-hint">Select a cat by clicking on them in any room</p>
+                </div>
+            </div>
+            
+            <!-- Cat Action Popup Modal -->
+            <div id="cat-popup" class="cat-popup-overlay">
+                <div class="cat-popup">
+                    <div class="cat-popup-header">
+                        <h2 id="popup-cat-name">Cat Name</h2>
+                        <button class="close-popup" id="close-popup">&times;</button>
+                    </div>
+                    <div class="cat-popup-body">
+                        <div class="cat-info">
+                            <span class="cat-emoji-large" id="popup-cat-emoji">🐱</span>
+                            <div class="cat-details">
+                                <p id="popup-cat-mood">Mood: Happy</p>
+                                <p id="popup-cat-location">Location: Kitchen</p>
+                                <p id="popup-cat-trait">Trait: Gentle soul</p>
+                            </div>
+                        </div>
+                        <div class="action-buttons" id="popup-action-buttons"></div>
+                    </div>
                 </div>
             </div>
             
@@ -69,7 +90,7 @@
             
             <div class="help-section">
                 <h3>How to Play:</h3>
-                <p>• Click on a cat to see available actions</p>
+                <p>• Click on a cat to open their action menu</p>
                 <p>• Click on 💩 or 💦 to clean up accidents!</p>
                 <p>• Some cats can't be in the same room together!</p>
                 <p>• Move cats between rooms to prevent conflicts</p>
@@ -78,7 +99,6 @@
                     <h4>Visual Indicators:</h4>
                     <span style="color: #ff0000;">Red Room</span> = Conflict | 
                     <span style="color: #ff6666;">Red Cat</span> = Unhappy | 
-                    <span style="color: #ffff00;">Yellow Border</span> = Selected | 
                     💩 = Poop | 💦 = Pee
                 </div>
             </div>
