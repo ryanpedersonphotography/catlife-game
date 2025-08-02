@@ -329,13 +329,15 @@ class CatLifeGame {
         
         // Cat info
         const infoDiv = document.createElement('div');
-        infoDiv.style.marginTop = '20px';
+        infoDiv.style.marginTop = '15px';
         infoDiv.style.color = '#888';
+        infoDiv.style.fontSize = '0.9em';
+        infoDiv.style.lineHeight = '1.4';
         infoDiv.innerHTML = `
-            <p>Trait: ${cat.trait}</p>
-            <p>Happiness: ${this.getHappyBar(cat.happy)}</p>
-            <p>Hunger: ${this.getHungerBar(cat.hunger)}</p>
-            ${cat.conflicts.length > 0 ? `<p>⚠️ Doesn't get along with: ${cat.conflicts.map(c => this.cats[c].name).join(', ')}</p>` : ''}
+            <p style="margin: 5px 0; word-wrap: break-word;">Trait: ${cat.trait}</p>
+            <p style="margin: 5px 0;">Happiness: ${this.getHappyBar(cat.happy)}</p>
+            <p style="margin: 5px 0;">Hunger: ${this.getHungerBar(cat.hunger)}</p>
+            ${cat.conflicts.length > 0 ? `<p style="margin: 5px 0; word-wrap: break-word;">⚠️ Conflicts: ${cat.conflicts.map(c => this.cats[c].name).join(', ')}</p>` : ''}
         `;
         actionsDiv.appendChild(infoDiv);
     }
