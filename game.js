@@ -171,15 +171,30 @@ class CatLifeGame {
                 catsContainer.appendChild(catDiv);
             });
             
-            // Show messes in room
-            if (room.messes.length > 0) {
+            // Show messes in room as visual accidents
+            const messContainer = document.createElement('div');
+            messContainer.className = 'mess-container';
+            
+            room.messes.forEach((mess, index) => {
                 const messDiv = document.createElement('div');
-                messDiv.className = 'room-mess';
-                messDiv.textContent = `⚠️ ${room.messes.join(', ')}`;
-                messDiv.style.color = '#ff6666';
-                messDiv.style.marginTop = '10px';
-                messDiv.style.textAlign = 'center';
-                roomDiv.appendChild(messDiv);
+                messDiv.className = 'mess-visual';
+                messDiv.id = `mess-${roomId}-${index}`;
+                
+                if (mess.includes('poop')) {
+                    messDiv.innerHTML = '💩';
+                    messDiv.classList.add('poop');
+                } else if (mess.includes('pee')) {
+                    messDiv.innerHTML = '💦';
+                    messDiv.classList.add('pee');
+                }
+                
+                messDiv.title = 'Click to clean!';
+                messDiv.addEventListener('click', () => this.cleanMess(roomId, index));
+                messContainer.appendChild(messDiv);
+            });
+            
+            if (room.messes.length > 0) {
+                roomDiv.appendChild(messContainer);
             }
             
             roomDiv.appendChild(catsContainer);
@@ -415,7 +430,7 @@ class CatLifeGame {
                 this.displayMessage("I don't understand that command. Type 'help' for options.");
         }
         
-        if (Math.random() < 0.3 && this.gameState.time !== "Night") {
+        if (Math.random() < 0.5 && this.gameState.time !== "Night") {
             this.triggerRandomEvent();
         }
     }
@@ -464,9 +479,27 @@ class CatLifeGame {
         this.renderRooms();
     }
     
+    cleanMess(roomId, messIndex) {
+        const room = this.rooms[roomId];
+        if (room.messes[messIndex]) {
+            const mess = room.messes[messIndex];
+            room.messes.splice(messIndex, 1);
+            
+            this.gameState.score += 3;
+            this.displayMessage(`You cleaned up the ${mess} in the ${room.name}!`);
+            
+            // Make cats happier when messes are cleaned
+            room.cats.forEach(catId => {
+                this.cats[catId].happy += 3;
+            });
+            
+            this.renderRooms();
+        }
+    }
+    
     cleanArea(area) {
         let cleaned = 0;
-        Object.values(this.rooms).forEach(room => {
+        Object.entries(this.rooms).forEach(([roomId, room]) => {
             if (room.messes.length > 0 && (area === 'all' || room.name.toLowerCase().includes(area))) {
                 cleaned += room.messes.length;
                 room.messes = [];
@@ -513,7 +546,7 @@ class CatLifeGame {
     triggerRandomEvent() {
         const events = [
             () => {
-                if (Math.random() < 0.5) {
+                if (Math.random() < 0.7 && this.rooms[this.cats.snicker.room].messes.length < 3) {
                     const room = this.rooms[this.cats.snicker.room];
                     room.messes.push("💩 poop");
                     this.displayMessage(`💩 Oh no! Snicker has pooped in the ${room.name}!`);
@@ -522,7 +555,7 @@ class CatLifeGame {
                 }
             },
             () => {
-                if (Math.random() < 0.5) {
+                if (Math.random() < 0.7 && this.rooms[this.cats.scampi.room].messes.length < 3) {
                     const room = this.rooms[this.cats.scampi.room];
                     room.messes.push("💦 pee");
                     this.displayMessage(`💦 Uh oh! Scampi has peed in the ${room.name}!`);
