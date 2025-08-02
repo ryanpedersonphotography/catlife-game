@@ -185,6 +185,31 @@ class CatLifeGame {
             roomDiv.appendChild(catsContainer);
             container.appendChild(roomDiv);
         });
+        
+        // Add visual elements for blueprint style
+        this.addBlueprintElements(container);
+    }
+    
+    addBlueprintElements(container) {
+        // Add hallway label
+        const hallwayLabel = document.createElement('div');
+        hallwayLabel.className = 'blueprint-label label-hallway';
+        hallwayLabel.textContent = 'Hallway';
+        container.appendChild(hallwayLabel);
+        
+        // Add doors
+        const doors = [
+            { id: 'door-kitchen-hall', class: 'door door-horizontal' },
+            { id: 'door-living-hall', class: 'door door-vertical' },
+            { id: 'door-bedroom-hall', class: 'door door-horizontal' }
+        ];
+        
+        doors.forEach(door => {
+            const doorDiv = document.createElement('div');
+            doorDiv.id = door.id;
+            doorDiv.className = door.class;
+            container.appendChild(doorDiv);
+        });
     }
     
     checkRoomConflicts(roomId) {
