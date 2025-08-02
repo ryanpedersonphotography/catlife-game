@@ -15,6 +15,17 @@ class CatLifeGame {
                 name: "Bedroom",
                 cats: [],
                 messes: []
+            },
+            bathroom: {
+                name: "Bathroom",
+                cats: [],
+                messes: []
+            },
+            outside: {
+                name: "Outside",
+                cats: [],
+                messes: [],
+                isOutside: true
             }
         };
         
@@ -49,7 +60,7 @@ class CatLifeGame {
                 room: "bedroom",
                 emoji: "😾",
                 aggression: 80,
-                conflicts: ["scampi", "stinkylee"] // Fights with these cats
+                conflicts: ["scampi", "stinkylee", "lucy"] // Fights with these cats
             },
             scampi: {
                 name: "Scampi",
@@ -81,6 +92,38 @@ class CatLifeGame {
                 room: "livingroom",
                 emoji: "😺",
                 conflicts: [] // Gets along with everyone
+            },
+            tink: {
+                name: "Tink",
+                fed: false,
+                happy: 50,
+                trait: "needs extra attention, loves bathroom",
+                hunger: 85,
+                room: "bathroom",
+                emoji: "🐈",
+                needsExtra: true,
+                favoriteRoom: "bathroom",
+                conflicts: []
+            },
+            lucy: {
+                name: "Lucy",
+                fed: false,
+                happy: 50,
+                trait: "independent and feisty",
+                hunger: 70,
+                room: "bedroom",
+                emoji: "🐈‍⬛",
+                conflicts: ["rudy"] // Doesn't get along with Rudy
+            },
+            giselle: {
+                name: "Giselle",
+                fed: false,
+                happy: 50,
+                trait: "graceful and elegant",
+                hunger: 60,
+                room: "livingroom",
+                emoji: "😻",
+                conflicts: []
             }
         };
         
@@ -147,6 +190,8 @@ class CatLifeGame {
             
             room.cats.forEach(catId => {
                 const cat = this.cats[catId];
+                if (cat.missing) return; // Skip missing cats
+                
                 const catDiv = document.createElement('div');
                 catDiv.className = 'cat-icon';
                 catDiv.id = `cat-${catId}`;
@@ -161,6 +206,10 @@ class CatLifeGame {
                 
                 if (hasConflict && this.isCatInConflict(catId, roomId)) {
                     catDiv.classList.add('fighting');
+                }
+                
+                if (cat.wontComeBack) {
+                    catDiv.classList.add('wandering');
                 }
                 
                 catDiv.innerHTML = `
@@ -315,9 +364,9 @@ class CatLifeGame {
         });
         actionsDiv.appendChild(playBtn);
         
-        // Move buttons
+        // Move buttons - exclude outside from normal moves
         Object.entries(this.rooms).forEach(([roomId, room]) => {
-            if (cat.room !== roomId) {
+            if (cat.room !== roomId && roomId !== 'outside') {
                 const moveBtn = document.createElement('button');
                 moveBtn.className = 'action-btn';
                 moveBtn.textContent = `📦 Move to ${room.name}`;
@@ -328,6 +377,27 @@ class CatLifeGame {
                 actionsDiv.appendChild(moveBtn);
             }
         });
+        
+        // Let out/Let in button
+        if (cat.room === 'outside') {
+            const letInBtn = document.createElement('button');
+            letInBtn.className = 'action-btn';
+            letInBtn.textContent = '🏠 Let Inside';
+            letInBtn.addEventListener('click', () => {
+                this.letCatIn(catId);
+                this.showCatActions(catId);
+            });
+            actionsDiv.appendChild(letInBtn);
+        } else {
+            const letOutBtn = document.createElement('button');
+            letOutBtn.className = 'action-btn';
+            letOutBtn.textContent = '🌳 Let Outside';
+            letOutBtn.addEventListener('click', () => {
+                this.letCatOut(catId);
+                this.showCatActions(catId);
+            });
+            actionsDiv.appendChild(letOutBtn);
+        }
         
         // Cat info
         const infoDiv = document.createElement('div');
@@ -379,6 +449,71 @@ class CatLifeGame {
         this.displayMessage(`You moved ${cat.name} to the ${this.rooms[newRoomId].name}.`);
         this.useEnergy(3, 'moving cat');
         this.gameState.score += 2;
+        
+        this.renderRooms();
+        this.checkConflicts();
+    }
+    
+    letCatOut(catId) {
+        // Check energy first
+        if (this.gameState.energy < 2) {
+            this.displayMessage("You're too tired to let cats out...");
+            return;
+        }
+        
+        const cat = this.cats[catId];
+        const oldRoom = cat.room;
+        
+        // Remove from old room
+        this.rooms[oldRoom].cats = this.rooms[oldRoom].cats.filter(id => id !== catId);
+        
+        // Add to outside
+        cat.room = 'outside';
+        this.rooms.outside.cats.push(catId);
+        
+        this.displayMessage(`You let ${cat.name} outside to explore.`);
+        this.useEnergy(2, 'letting cat out');
+        
+        // Risk of cat not coming back
+        if (Math.random() < 0.15) {
+            cat.wontComeBack = true;
+            this.displayMessage(`⚠️ ${cat.name} seems very interested in something far away...`);
+        }
+        
+        this.renderRooms();
+    }
+    
+    letCatIn(catId) {
+        // Check energy first
+        if (this.gameState.energy < 2) {
+            this.displayMessage("You're too tired to let cats in...");
+            return;
+        }
+        
+        const cat = this.cats[catId];
+        
+        // Check if cat won't come back
+        if (cat.wontComeBack) {
+            this.displayMessage(`😿 ${cat.name} doesn't come when called! They've wandered off!`);
+            this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+            cat.room = 'missing';
+            cat.missing = true;
+            this.gameState.score -= 20;
+            this.useEnergy(2, 'trying to call cat');
+            this.renderRooms();
+            return;
+        }
+        
+        // Remove from outside
+        this.rooms.outside.cats = this.rooms.outside.cats.filter(id => id !== catId);
+        
+        // Add to kitchen by default
+        cat.room = 'kitchen';
+        this.rooms.kitchen.cats.push(catId);
+        
+        this.displayMessage(`${cat.name} comes inside happily.`);
+        this.useEnergy(2, 'letting cat in');
+        this.gameState.score += 3;
         
         this.renderRooms();
         this.checkConflicts();
@@ -603,6 +738,18 @@ class CatLifeGame {
                 this.displayMessage("☀️ A sunbeam appears! All cats are slightly happier.");
                 Object.values(this.cats).forEach(cat => cat.happy += 5);
                 this.gameState.score += 2;
+            },
+            () => {
+                // Tink needs extra attention
+                if (this.cats.tink && !this.cats.tink.missing) {
+                    if (this.cats.tink.room !== 'bathroom') {
+                        this.displayMessage("😿 Tink is crying! They want to be in the bathroom!");
+                        this.cats.tink.happy -= 15;
+                    } else if (Math.random() < 0.5) {
+                        this.displayMessage("🐈 Tink is meowing for extra attention!");
+                        this.cats.tink.happy -= 10;
+                    }
+                }
             }
         ];
         

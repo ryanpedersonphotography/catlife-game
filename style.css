@@ -62,7 +62,7 @@ h1 {
     position: relative;
     width: 100%;
     max-width: 800px;
-    height: 400px;
+    height: 450px;
     margin: 0 auto 20px;
     background-color: #0a0a0a;
     border: 3px solid #00ff00;
@@ -84,23 +84,38 @@ h1 {
 .room#room-kitchen {
     top: 20px;
     left: 20px;
-    width: 250px;
-    height: 160px;
+    width: 200px;
+    height: 140px;
 }
 
 .room#room-livingroom {
     top: 20px;
-    right: 20px;
-    width: 350px;
-    height: 160px;
+    left: 240px;
+    width: 250px;
+    height: 140px;
 }
 
 .room#room-bedroom {
+    top: 20px;
+    right: 20px;
+    width: 200px;
+    height: 140px;
+}
+
+.room#room-bathroom {
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 20px;
+    width: 180px;
+    height: 120px;
+}
+
+.room#room-outside {
+    bottom: 20px;
+    right: 20px;
     width: 300px;
-    height: 160px;
+    height: 120px;
+    background-color: rgba(0, 100, 0, 0.2);
+    border-style: dashed;
 }
 
 .room::before {
@@ -201,6 +216,18 @@ h1 {
 
 .cat-icon.fighting {
     animation: shake 0.5s infinite;
+}
+
+.cat-icon.wandering {
+    opacity: 0.7;
+    border-color: #ffaa00;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 0.4; }
+    100% { opacity: 0.7; }
 }
 
 @keyframes shake {
