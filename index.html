@@ -202,6 +202,17 @@
         </footer>
     </div>
     
+    <script src="welcome-screen.js"></script>
+    <script src="settings.js"></script>
+    <script src="drag-drop.js"></script>
     <script src="game.js"></script>
+    <script>
+        // Initialize settings manager after DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.settingsManager) {
+                window.settingsManager.init();
+            }
+        });
+    </script>
 </body>
 </html>

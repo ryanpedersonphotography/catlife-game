@@ -39,17 +39,44 @@ class CatLifeGame {
                     maxFood: 10,
                     currentFood: 0,
                     position: { x: 250, y: 150 }
-                }
+                },
+                litterBoxes: [
+                    {
+                        id: 'kitchen-box',
+                        position: { x: 100, y: 250 },
+                        cleanliness: 100,
+                        maxCapacity: 5,
+                        currentUses: 0
+                    }
+                ]
             },
             livingroom: {
                 name: "Living Room",
                 cats: [],
-                messes: []
+                messes: [],
+                litterBoxes: [
+                    {
+                        id: 'livingroom-box',
+                        position: { x: 300, y: 300 },
+                        cleanliness: 100,
+                        maxCapacity: 5,
+                        currentUses: 0
+                    }
+                ]
             },
             bedroom: {
                 name: "Bedroom",
                 cats: [],
-                messes: []
+                messes: [],
+                litterBoxes: [
+                    {
+                        id: 'bedroom-box',
+                        position: { x: 200, y: 200 },
+                        cleanliness: 100,
+                        maxCapacity: 5,
+                        currentUses: 0
+                    }
+                ]
             },
             bathroom: {
                 name: "Bathroom",
@@ -57,15 +84,8 @@ class CatLifeGame {
                 messes: [],
                 litterBoxes: [
                     {
-                        id: 'box1',
-                        position: { x: 50, y: 50 },
-                        cleanliness: 100, // 100 = clean, 0 = needs cleaning
-                        maxCapacity: 5,   // Uses before needing cleaning
-                        currentUses: 0
-                    },
-                    {
-                        id: 'box2',
-                        position: { x: 350, y: 50 },
+                        id: 'bathroom-box',
+                        position: { x: 200, y: 100 },
                         cleanliness: 100,
                         maxCapacity: 5,
                         currentUses: 0
@@ -111,7 +131,10 @@ class CatLifeGame {
                 emoji: "🐱",
                 messLevel: 0,
                 health: 75,
-                conflicts: ["snicker"] // Gusty steals Snicker's food
+                conflicts: ["snicker"], // Gusty steals Snicker's food
+                bathroomPreference: "litterbox", // prefers litter box
+                hasPoopedToday: false,
+                poopUrgency: 0
             },
             snicker: {
                 name: "Snicker",
@@ -124,7 +147,10 @@ class CatLifeGame {
                 emoji: "😸",
                 messLevel: 0,
                 health: 75,
-                conflicts: ["gusty"] // Gets food stolen by Gusty
+                conflicts: ["gusty"], // Gets food stolen by Gusty
+                bathroomPreference: "anywhere", // will poop anywhere
+                hasPoopedToday: false,
+                poopUrgency: 0
             },
             rudy: {
                 name: "Rudy",
@@ -138,7 +164,10 @@ class CatLifeGame {
                 messLevel: 0,
                 health: 75,
                 aggression: 80,
-                conflicts: ["scampi", "stinkylee", "lucy"] // Fights with these cats
+                conflicts: ["scampi", "stinkylee", "lucy"], // Fights with these cats
+                bathroomPreference: "outside", // prefers going outside
+                hasPoopedToday: false,
+                poopUrgency: 0
             },
             scampi: {
                 name: "Scampi",
@@ -151,7 +180,10 @@ class CatLifeGame {
                 emoji: "😹",
                 messLevel: 0,
                 health: 75,
-                conflicts: ["rudy"] // Gets bullied by Rudy
+                conflicts: ["rudy"], // Gets bullied by Rudy
+                bathroomPreference: "litterbox", // nervous, prefers litter box
+                hasPoopedToday: false,
+                poopUrgency: 0
             },
             stinkylee: {
                 name: "Stinky Lee",
@@ -164,7 +196,10 @@ class CatLifeGame {
                 emoji: "😼",
                 messLevel: 0,
                 health: 75,
-                conflicts: ["rudy"] // Doesn't like Rudy's aggression
+                conflicts: ["rudy"], // Doesn't like Rudy's aggression
+                bathroomPreference: "outside", // independent, goes outside
+                hasPoopedToday: false,
+                poopUrgency: 0
             },
             jonah: {
                 name: "Jonah",
@@ -177,7 +212,10 @@ class CatLifeGame {
                 emoji: "😺",
                 messLevel: 0,
                 health: 75,
-                conflicts: [] // Gets along with everyone
+                conflicts: [], // Gets along with everyone
+                bathroomPreference: "litterbox", // polite, uses litter box
+                hasPoopedToday: false,
+                poopUrgency: 0
             },
             tink: {
                 name: "Tink",
@@ -192,7 +230,12 @@ class CatLifeGame {
                 health: 65, // Lower health - needs extra care
                 needsExtra: true,
                 favoriteRoom: "bathroom",
-                conflicts: []
+                conflicts: [],
+                bathroomPreference: "litterbox", // always uses litter box
+                hasPoopedToday: false,
+                poopUrgency: 0,
+                morningBathroomTime: 0, // tracks morning bathroom time
+                mustStayInBathroom: true // morning bathroom requirement
             },
             lucy: {
                 name: "Lucy",
@@ -205,7 +248,10 @@ class CatLifeGame {
                 emoji: "🐈‍⬛",
                 messLevel: 0,
                 health: 75,
-                conflicts: ["rudy"] // Doesn't get along with Rudy
+                conflicts: ["rudy"], // Doesn't get along with Rudy
+                bathroomPreference: "outside", // independent, prefers outside
+                hasPoopedToday: false,
+                poopUrgency: 0
             },
             giselle: {
                 name: "Giselle",
@@ -218,7 +264,10 @@ class CatLifeGame {
                 emoji: "😻",
                 messLevel: 0,
                 health: 75,
-                conflicts: []
+                conflicts: [],
+                bathroomPreference: "litterbox", // elegant, uses litter box
+                hasPoopedToday: false,
+                poopUrgency: 0
             }
         };
         
@@ -340,9 +389,17 @@ class CatLifeGame {
         this.updateDisplay();
         this.renderRooms();
         this.updateCastPanel();
-        this.displayMessage("Good morning! It's time to feed your special needs cats.");
-        this.displayMessage("Click on a cat to interact with them, or use text commands.");
-        this.displayMessage("The cats are scattered throughout the house.");
+        
+        // Show welcome screen on game start
+        this.welcomeScreen = new WelcomeScreen(this);
+        this.welcomeScreen.show(false);
+        
+        // Initialize drag and drop
+        if (window.DragDropManager) {
+            this.dragDropManager = new DragDropManager(this);
+            this.dragDropManager.init();
+        }
+        
         this.checkConflicts();
         
         const input = document.getElementById('player-input');
@@ -408,10 +465,22 @@ class CatLifeGame {
                     this.currentActions = this.actionsPerTimePeriod;
                 }
                 
-                // Increase cat mess levels over time
+                // Increase cat mess levels and poop urgency over time
                 Object.values(this.cats).forEach(cat => {
                     if (!cat.missing && cat.room !== 'outside' && !cat.asleep) {
                         cat.messLevel = Math.min(100, (cat.messLevel || 0) + 5);
+                        
+                        // Increase poop urgency if haven't pooped today
+                        if (!cat.hasPoopedToday) {
+                            cat.poopUrgency = Math.min(100, (cat.poopUrgency || 0) + 3);
+                            
+                            // Urgent need to poop
+                            if (cat.poopUrgency > 80) {
+                                if (Math.random() < 0.4) {
+                                    this.displayMessage(`💩 ${cat.name} really needs to poop!`);
+                                }
+                            }
+                        }
                         
                         // If very high, cat might head to bathroom
                         if (cat.messLevel > 85 && cat.room !== 'bathroom') {
@@ -421,6 +490,25 @@ class CatLifeGame {
                         }
                     }
                 });
+                
+                // Handle Tink's morning bathroom requirement
+                if (this.gameState.time === 'Morning' && this.cats.tink.mustStayInBathroom) {
+                    this.cats.tink.morningBathroomTime += 10; // seconds
+                    
+                    // After 3 hours (10800 seconds in real time, but we'll make it 30 ticks = 5 minutes game time)
+                    if (this.cats.tink.morningBathroomTime >= 30) {
+                        this.cats.tink.mustStayInBathroom = false;
+                        this.displayMessage("✅ Tink has completed her morning bathroom routine!");
+                        this.cats.tink.happy += 20;
+                        this.updateScore(5);
+                    } else if (this.cats.tink.room !== 'bathroom') {
+                        // Tink is unhappy if not in bathroom during morning requirement
+                        this.cats.tink.happy -= 2;
+                        if (Math.random() < 0.2) {
+                            this.displayMessage("😿 Tink needs to be in the bathroom for her morning routine!");
+                        }
+                    }
+                }
                 
                 // Update health periodically (every 30 seconds)
                 if (this.healthUpdateCounter === undefined) {
@@ -569,14 +657,27 @@ class CatLifeGame {
         return hasConflict;
     }
     
-    triggerAccident(catId) {
+    triggerAccident(catId, forcePoopAccident = false) {
         const cat = this.cats[catId];
         const room = this.rooms[cat.room];
         
         if (room.messes.length >= 3) return; // Room too messy already
         
-        // Determine type based on cat
-        const messType = (cat.name === 'Scampi' || Math.random() < 0.5) ? 'pee' : 'poop';
+        // Determine type based on cat and situation
+        let messType;
+        if (forcePoopAccident || cat.poopUrgency > 90) {
+            messType = 'poop';
+            cat.hasPoopedToday = true;
+            cat.poopUrgency = 0;
+        } else if (cat.name === 'Scampi' || Math.random() < 0.5) {
+            messType = 'pee';
+        } else {
+            messType = 'poop';
+            if (cat.poopUrgency > 50) {
+                cat.hasPoopedToday = true;
+                cat.poopUrgency = 0;
+            }
+        }
         
         room.messes.push({ type: messType });
         cat.messLevel = 0;
@@ -817,9 +918,17 @@ class CatLifeGame {
                     box.currentUses++;
                     box.cleanliness = Math.max(0, box.cleanliness - 20);
                     cat.messLevel = 0;
-                    cat.happy += 10;
                     
-                    this.displayMessage(`🚽 ${cat.name} used the litter box.`);
+                    // Handle daily poop
+                    if (!cat.hasPoopedToday && cat.poopUrgency > 50) {
+                        cat.hasPoopedToday = true;
+                        cat.poopUrgency = 0;
+                        cat.happy += 15;
+                        this.displayMessage(`💩 ${cat.name} successfully pooped in the litter box!`);
+                    } else {
+                        cat.happy += 10;
+                        this.displayMessage(`🚽 ${cat.name} used the litter box.`);
+                    }
                     
                     // Check if box is getting full
                     if (box.currentUses >= box.maxCapacity) {
@@ -1316,8 +1425,8 @@ class CatLifeGame {
     renderRoomContents(roomId, container) {
         const room = this.rooms[roomId];
         
-        // Render litter boxes if this is the bathroom
-        if (roomId === 'bathroom' && room.litterBoxes) {
+        // Render litter boxes in any room that has them
+        if (room.litterBoxes) {
             room.litterBoxes.forEach((box, index) => {
                 const boxDiv = document.createElement('div');
                 boxDiv.className = 'litter-box';
@@ -1417,7 +1526,7 @@ class CatLifeGame {
                 // Add click handler to clean box
                 boxDiv.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    this.cleanLitterBox(index);
+                    this.cleanLitterBox(roomId, index);
                 });
                 
                 container.appendChild(boxDiv);
@@ -2318,6 +2427,12 @@ class CatLifeGame {
         const cat = this.cats[catId];
         const oldRoom = cat.room;
         
+        // Prevent moving Tink out of bathroom during morning requirement
+        if (catId === 'tink' && cat.mustStayInBathroom && newRoomId !== 'bathroom' && this.gameState.time === 'Morning') {
+            this.displayMessage("🚫 Tink needs to stay in the bathroom for her morning routine!");
+            return;
+        }
+        
         // Remove from old room
         this.rooms[oldRoom].cats = this.rooms[oldRoom].cats.filter(id => id !== catId);
         
@@ -2669,14 +2784,17 @@ class CatLifeGame {
         }
     }
     
-    cleanLitterBox(boxIndex) {
+    cleanLitterBox(roomId, boxIndex) {
         // Check energy first
         if (this.gameState.energy < 6) {
             this.displayMessage("You're too tired to clean the litter box...");
             return;
         }
         
-        const box = this.rooms.bathroom.litterBoxes[boxIndex];
+        const room = this.rooms[roomId];
+        if (!room || !room.litterBoxes) return;
+        
+        const box = room.litterBoxes[boxIndex];
         if (!box) return;
         
         if (box.cleanliness > 80) {
@@ -2689,7 +2807,7 @@ class CatLifeGame {
         box.cleanliness = 100;
         box.currentUses = 0;
         
-        this.displayMessage(`🧹 You cleaned the litter box!`);
+        this.displayMessage(`🧹 You cleaned the litter box in the ${room.name}!`);
         this.useEnergy(6, 'cleaning litter box');
         this.updateScore(wasVeryDirty ? 10 : 5);
         this.dailyStats.messesCleaned++;
@@ -3446,11 +3564,36 @@ class CatLifeGame {
             cat.asleep = false;
             cat.hunger += 30;
             if (cat.happy > 0) cat.happy = Math.max(10, cat.happy - 10);
+            
+            // Reset daily poop tracking
+            cat.hasPoopedToday = false;
+            cat.poopUrgency = Math.min(50, cat.poopUrgency + 20); // Carry over some urgency
+            
+            // Reset Tink's morning bathroom requirement
+            if (catId === 'tink') {
+                cat.mustStayInBathroom = true;
+                cat.morningBathroomTime = 0;
+            }
         }
         
         // Then place them conflict-aware
         while (catsToPlace.length > 0) {
             const [catId, cat] = catsToPlace.shift();
+            
+            // Tink must start in bathroom
+            if (catId === 'tink') {
+                cat.room = 'bathroom';
+                this.rooms.bathroom.cats.push(catId);
+                
+                // Reset movement state
+                if (this.catMovementStates && this.catMovementStates[catId]) {
+                    this.catMovementStates[catId].currentX = 200;
+                    this.catMovementStates[catId].currentY = 100;
+                    this.catMovementStates[catId].targetX = 200;
+                    this.catMovementStates[catId].targetY = 100;
+                }
+                continue;
+            }
             
             // Try to find a room without conflicts
             let bestRoom = null;
@@ -3502,9 +3645,10 @@ class CatLifeGame {
         // Restore some energy
         this.gameState.energy = Math.min(this.gameState.maxEnergy, this.gameState.energy + 50);
         
-        this.displayMessage(`\n🌅 Day ${this.gameState.day} begins!`);
-        this.displayMessage("Good morning! Time to take care of your special needs cats.");
-        this.displayMessage("The cats have scattered to different rooms.");
+        // Show daily status screen
+        if (this.welcomeScreen) {
+            this.welcomeScreen.show(true);
+        }
         
         // Resume time progression
         this.autoProgress = true;
