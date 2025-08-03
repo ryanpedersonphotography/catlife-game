@@ -43,6 +43,7 @@
                 </div>
                 
                 <button id="start-game-btn" class="start-game-btn">START GAME</button>
+                <button id="continue-game-btn" class="continue-game-btn" style="display: none;">CONTINUE GAME</button>
             </div>
             
             <div class="high-scores">
@@ -62,8 +63,17 @@
                 <span id="score">Score: 0</span>
                 <span id="energy-display">Energy: <span id="energy-bar"></span></span>
                 <span id="time-display">Time: <span id="clock-display"></span></span>
+                <button id="save-game-btn" class="save-game-btn" style="display: none;">💾 Save Game</button>
             </div>
         </header>
+        
+        <!-- Cast Listing Panel -->
+        <div class="cast-panel" id="cast-panel">
+            <h3>🐱 Cast Status 🐱</h3>
+            <div class="cast-list" id="cast-list">
+                <!-- Cast members will be dynamically added here -->
+            </div>
+        </div>
         
         <main>
             <div class="rooms-container" id="rooms-container"></div>
