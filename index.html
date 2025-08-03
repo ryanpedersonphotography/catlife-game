@@ -28,6 +28,20 @@
                     </div>
                 </div>
                 
+                <div class="game-mode-group">
+                    <label>Select Game Mode:</label>
+                    <div class="mode-buttons">
+                        <button class="mode-btn active" data-mode="challenge">
+                            <span class="mode-title">🏆 CHALLENGE MODE</span>
+                            <span class="mode-desc">Game ends at -50 score</span>
+                        </button>
+                        <button class="mode-btn" data-mode="endless">
+                            <span class="mode-title">♾️ ENDLESS MODE</span>
+                            <span class="mode-desc">Play forever, no game over</span>
+                        </button>
+                    </div>
+                </div>
+                
                 <button id="start-game-btn" class="start-game-btn">START GAME</button>
             </div>
             
@@ -71,7 +85,7 @@
                     </div>
                     <div class="cat-popup-body">
                         <div class="cat-info">
-                            <span class="cat-emoji-large" id="popup-cat-emoji">🐱</span>
+                            <div class="cat-svg-large" id="popup-cat-svg"></div>
                             <div class="cat-details">
                                 <p id="popup-cat-mood">Mood: Happy</p>
                                 <p id="popup-cat-location">Location: Kitchen</p>
@@ -79,6 +93,75 @@
                             </div>
                         </div>
                         <div class="action-buttons" id="popup-action-buttons"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bedtime Summary Modal -->
+            <div id="bedtime-summary" class="bedtime-overlay">
+                <div class="bedtime-modal">
+                    <div class="bedtime-header">
+                        <h2>🌙 Bedtime Report - Day <span id="summary-day">1</span></h2>
+                    </div>
+                    <div class="bedtime-body">
+                        <div class="summary-section">
+                            <h3>😴 Sleep Status</h3>
+                            <div id="sleep-status"></div>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h3>📊 Daily Statistics</h3>
+                            <div class="stat-grid">
+                                <div class="stat-item">
+                                    <span class="stat-label">Cats Fed:</span>
+                                    <span class="stat-value" id="cats-fed-stat">0/9</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Messes Cleaned:</span>
+                                    <span class="stat-value" id="messes-cleaned-stat">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Play Sessions:</span>
+                                    <span class="stat-value" id="play-sessions-stat">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Energy Used:</span>
+                                    <span class="stat-value" id="energy-used-stat">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Happiness Average:</span>
+                                    <span class="stat-value" id="happiness-avg-stat">0%</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Conflicts:</span>
+                                    <span class="stat-value" id="conflicts-stat">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h3>🏆 Score Summary</h3>
+                            <div class="score-breakdown">
+                                <div class="score-line">
+                                    <span>Base Actions:</span>
+                                    <span id="base-score">+0</span>
+                                </div>
+                                <div class="score-line">
+                                    <span>Sleep Bonus/Penalty:</span>
+                                    <span id="sleep-score">+0</span>
+                                </div>
+                                <div class="score-line">
+                                    <span>Other Bonuses:</span>
+                                    <span id="bonus-score">+0</span>
+                                </div>
+                                <div class="score-line total">
+                                    <span>Day Total:</span>
+                                    <span id="day-total-score">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button id="go-to-sleep-btn" class="go-to-sleep-btn">🛏️ Go to Sleep</button>
                     </div>
                 </div>
             </div>

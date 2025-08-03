@@ -4,6 +4,11 @@
     box-sizing: border-box;
 }
 
+button {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
 body {
     font-family: 'Courier New', monospace;
     background-color: #1a1a1a;
@@ -27,6 +32,7 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    pointer-events: auto;
     background-image: 
         repeating-linear-gradient(
             0deg,
@@ -46,6 +52,8 @@ body {
     padding: 40px;
     text-align: center;
     box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+    position: relative;
+    z-index: 1001;
 }
 
 .game-title {
@@ -102,7 +110,18 @@ body {
 }
 
 .difficulty-group {
+    margin-bottom: 20px;
+}
+
+.game-mode-group {
     margin-bottom: 30px;
+}
+
+.game-mode-group label {
+    display: block;
+    color: #00ff00;
+    margin-bottom: 10px;
+    font-size: 1.1em;
 }
 
 .difficulty-buttons {
@@ -122,6 +141,8 @@ body {
     cursor: pointer;
     border-radius: 5px;
     transition: all 0.3s;
+    position: relative;
+    z-index: 1002;
 }
 
 .diff-btn:hover {
@@ -132,6 +153,52 @@ body {
     background-color: #00ff00;
     color: #000;
     font-weight: bold;
+}
+
+.mode-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.mode-btn {
+    padding: 15px 25px;
+    background-color: #000;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 180px;
+    position: relative;
+    z-index: 1002;
+}
+
+.mode-btn:hover {
+    background-color: rgba(0, 255, 0, 0.1);
+}
+
+.mode-btn.active {
+    background-color: #00ff00;
+    color: #000;
+    font-weight: bold;
+}
+
+.mode-title {
+    font-size: 1em;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.mode-desc {
+    font-size: 0.8em;
+    opacity: 0.8;
+    display: block;
 }
 
 .start-game-btn {
@@ -145,6 +212,8 @@ body {
     cursor: pointer;
     border-radius: 5px;
     animation: pulse-btn 2s infinite;
+    position: relative;
+    z-index: 1002;
 }
 
 @keyframes pulse-btn {
@@ -379,16 +448,23 @@ h1 {
     cursor: pointer;
     transition: all 0.3s;
     text-align: center;
-    min-width: 70px;
+    min-width: 100px;
     font-size: 0.9em;
     display: inline-block;
     padding: 5px;
     position: relative;
     z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .cat-icon:hover {
     transform: scale(1.1);
+}
+
+.cat-icon:hover .cat-svg {
+    filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.6));
 }
 
 .cat-icon.selected {
@@ -418,6 +494,20 @@ h1 {
     border-color: #ffff00;
 }
 
+.cat-icon.sleeping {
+    opacity: 0.7;
+    animation: gentle-breathing 3s infinite;
+}
+
+.cat-icon.sleeping .cat-svg {
+    filter: drop-shadow(0 0 10px rgba(0, 255, 0, 0.3));
+}
+
+@keyframes gentle-breathing {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
 @keyframes pulse {
     0% { opacity: 0.7; }
     50% { opacity: 0.4; }
@@ -435,10 +525,11 @@ h1 {
     50% { transform: translateY(-10px); }
 }
 
-.cat-emoji {
-    font-size: 2.2em;
+.cat-svg {
     display: block;
     margin-bottom: 5px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: filter 0.3s;
 }
 
 .cat-name {
@@ -633,6 +724,253 @@ h1 {
     display: flex;
 }
 
+/* Bedtime Summary Modal Styles */
+.bedtime-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+.bedtime-overlay.active {
+    display: flex;
+}
+
+.bedtime-modal {
+    background-color: #0a0a0a;
+    border: 3px solid #00ff00;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+    animation: popup-appear 0.3s ease-out;
+}
+
+.bedtime-header {
+    padding: 20px;
+    border-bottom: 2px solid #00ff00;
+    text-align: center;
+}
+
+.bedtime-header h2 {
+    color: #00ff00;
+    margin: 0;
+    font-size: 2em;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.bedtime-body {
+    padding: 20px;
+}
+
+.summary-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: rgba(0, 255, 0, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 255, 0, 0.2);
+}
+
+.summary-section h3 {
+    color: #00ff00;
+    margin: 0 0 15px 0;
+    font-size: 1.3em;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+}
+
+.stat-label {
+    color: #888;
+}
+
+.stat-value {
+    color: #00ff00;
+    font-weight: bold;
+}
+
+.score-breakdown {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.score-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    color: #00ff00;
+}
+
+.score-line.total {
+    border-top: 2px solid #00ff00;
+    margin-top: 10px;
+    padding-top: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.go-to-sleep-btn {
+    width: 100%;
+    padding: 20px;
+    background-color: #00ff00;
+    color: #000;
+    border: none;
+    font-family: 'Courier New', monospace;
+    font-size: 1.5em;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 20px;
+    animation: pulse-btn 2s infinite;
+}
+
+.go-to-sleep-btn:hover {
+    background-color: #00cc00;
+}
+
+/* Game Over Modal Styles */
+.game-over-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-over-overlay.active {
+    display: flex;
+}
+
+.game-over-modal {
+    background-color: #0a0a0a;
+    border: 3px solid #ff0000;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+    animation: popup-appear 0.3s ease-out;
+}
+
+.game-over-header {
+    padding: 20px;
+    border-bottom: 2px solid #ff0000;
+    text-align: center;
+    background-color: rgba(255, 0, 0, 0.1);
+}
+
+.game-over-header h2 {
+    color: #ff0000;
+    margin: 0;
+    font-size: 2.5em;
+    text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+    animation: pulse 2s infinite;
+}
+
+.game-over-body {
+    padding: 30px;
+    text-align: center;
+}
+
+.game-over-message {
+    color: #ff6666;
+    font-size: 1.3em;
+    margin-bottom: 20px;
+}
+
+.final-stats {
+    color: #00ff00;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.final-score {
+    color: #ffff00;
+    font-size: 1.4em;
+    margin-bottom: 30px;
+    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+}
+
+.game-over-actions {
+    margin-top: 30px;
+}
+
+.restart-btn {
+    padding: 15px 40px;
+    background-color: #ff0000;
+    color: #fff;
+    border: none;
+    font-family: 'Courier New', monospace;
+    font-size: 1.3em;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    animation: pulse-btn 2s infinite;
+    transition: all 0.3s;
+}
+
+.restart-btn:hover {
+    background-color: #cc0000;
+    transform: scale(1.05);
+}
+
+.sleep-status-grid {
+    display: grid;
+    gap: 8px;
+}
+
+.sleep-status-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.95em;
+}
+
+.sleep-status-item.sleeping {
+    background-color: rgba(0, 255, 0, 0.1);
+    border: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+.sleep-status-item.outside {
+    background-color: rgba(255, 255, 0, 0.1);
+    border: 1px solid rgba(255, 255, 0, 0.3);
+}
+
+.sleep-status-item.awake-happy {
+    background-color: rgba(255, 165, 0, 0.1);
+    border: 1px solid rgba(255, 165, 0, 0.3);
+}
+
+.sleep-status-item.awake-unhappy {
+    background-color: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+}
+
 .cat-popup {
     background-color: #0a0a0a;
     border: 3px solid #00ff00;
@@ -701,9 +1039,12 @@ h1 {
     border-radius: 8px;
 }
 
-.cat-emoji-large {
-    font-size: 4em;
-    display: block;
+.cat-svg-large {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 120px;
+    height: 120px;
 }
 
 .cat-details {

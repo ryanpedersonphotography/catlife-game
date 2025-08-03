@@ -65,6 +65,8 @@ class CatLifeGame {
             gusty: {
                 name: "Gusty",
                 fed: false,
+                asleep: false,
+                asleep: false,
                 happy: 50,
                 trait: "always eats other cats' food",
                 hunger: 80,
@@ -75,6 +77,7 @@ class CatLifeGame {
             snicker: {
                 name: "Snicker",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "poops everywhere",
                 hunger: 70,
@@ -86,6 +89,7 @@ class CatLifeGame {
             rudy: {
                 name: "Rudy",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "fights with other cats",
                 hunger: 75,
@@ -97,6 +101,7 @@ class CatLifeGame {
             scampi: {
                 name: "Scampi",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "pees everywhere",
                 hunger: 70,
@@ -108,6 +113,7 @@ class CatLifeGame {
             stinkylee: {
                 name: "Stinky Lee",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "mysterious and aloof",
                 hunger: 60,
@@ -118,6 +124,7 @@ class CatLifeGame {
             jonah: {
                 name: "Jonah",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "gentle soul",
                 hunger: 65,
@@ -128,6 +135,7 @@ class CatLifeGame {
             tink: {
                 name: "Tink",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "needs extra attention, loves bathroom",
                 hunger: 85,
@@ -140,6 +148,7 @@ class CatLifeGame {
             lucy: {
                 name: "Lucy",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "independent and feisty",
                 hunger: 70,
@@ -150,6 +159,7 @@ class CatLifeGame {
             giselle: {
                 name: "Giselle",
                 fed: false,
+                asleep: false,
                 happy: 50,
                 trait: "graceful and elegant",
                 hunger: 60,
@@ -170,15 +180,27 @@ class CatLifeGame {
             isGameOver: false
         };
         
+        // Daily statistics tracking
+        this.dailyStats = {
+            catsFed: 0,
+            messesCleaned: 0,
+            playSessions: 0,
+            energyUsed: 0,
+            conflictsOccurred: 0,
+            dayStartScore: 0,
+            sleepScore: 0,
+            bonusScore: 0
+        };
+        
         this.timeSequence = ["Morning", "Afternoon", "Evening", "Night"];
         this.currentTimeIndex = 0;
         
         // Time of day tracking
         this.timeOfDay = {
             "Morning": { start: 6, end: 12, current: 6 },
-            "Afternoon": { start: 12, end: 17, current: 12 },
-            "Evening": { start: 17, end: 21, current: 17 },
-            "Night": { start: 21, end: 24, current: 21 }
+            "Afternoon": { start: 12, end: 18, current: 12 },
+            "Evening": { start: 18, end: 22, current: 18 },
+            "Night": { start: 22, end: 24, current: 22 }
         };
         
         // Auto time progression settings
@@ -597,11 +619,22 @@ class CatLifeGame {
             catDiv.classList.add('unhappy');
         }
         
-        catDiv.innerHTML = `
-            <div class="cat-emoji">${cat.emoji}</div>
+        if (cat.asleep) {
+            catDiv.classList.add('sleeping');
+        }
+        
+        // Create SVG cat
+        const catSVG = this.createCatSVG(cat, 45);
+        catSVG.classList.add('cat-svg');
+        catDiv.appendChild(catSVG);
+        
+        // Add name and mood
+        const catInfo = document.createElement('div');
+        catInfo.innerHTML = `
             <div class="cat-name">${cat.name}</div>
             <div class="cat-mood">${this.getCatMood(cat)}</div>
         `;
+        catDiv.appendChild(catInfo);
         
         catDiv.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -660,6 +693,7 @@ class CatLifeGame {
                         }
                     });
                     this.gameState.score -= 2;
+                    this.dailyStats.conflictsOccurred++;
                 }
             }
         });
@@ -679,7 +713,11 @@ class CatLifeGame {
         
         // Update popup content
         document.getElementById('popup-cat-name').textContent = cat.name;
-        document.getElementById('popup-cat-emoji').textContent = cat.emoji;
+        // Replace emoji with SVG
+        const svgContainer = document.getElementById('popup-cat-svg');
+        svgContainer.innerHTML = '';
+        const largeSVG = this.createCatSVG(cat, 100);
+        svgContainer.appendChild(largeSVG);
         document.getElementById('popup-cat-mood').textContent = `Mood: ${this.getCatMood(cat)}`;
         document.getElementById('popup-cat-location').textContent = `Location: ${cat.room === 'outside' ? 'Outside' : this.rooms[cat.room].name}`;
         document.getElementById('popup-cat-trait').textContent = `Trait: ${cat.trait}`;
@@ -775,6 +813,28 @@ class CatLifeGame {
             });
             actionsDiv.appendChild(putOutBtn);
         }
+        
+        // Sleep button (only in Evening)
+        if (this.gameState.time === 'Evening') {
+            const sleepBtn = document.createElement('button');
+            sleepBtn.className = 'action-btn';
+            
+            if (cat.asleep) {
+                sleepBtn.textContent = '😴 Already Asleep';
+                sleepBtn.disabled = true;
+            } else if (cat.happy < 50) {
+                sleepBtn.textContent = '🛏️ Too Unhappy to Sleep';
+                sleepBtn.disabled = true;
+            } else {
+                sleepBtn.textContent = '🛏️ Put to Sleep';
+            }
+            
+            sleepBtn.addEventListener('click', () => {
+                this.putCatToSleep(catId);
+                this.closePopup();
+            });
+            actionsDiv.appendChild(sleepBtn);
+        }
     }
     
     getHappyBar(happiness) {
@@ -788,9 +848,360 @@ class CatLifeGame {
     }
     
     getCatMood(cat) {
+        if (cat.asleep) return '😴 Sleeping';
         if (cat.happy > 70) return '😊 Happy';
         if (cat.happy > 30) return '😐 OK';
         return '😿 Sad';
+    }
+    
+    createCatSVG(cat, size = 50) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', size);
+        svg.setAttribute('height', size);
+        svg.setAttribute('viewBox', '0 0 100 100');
+        svg.style.overflow = 'visible';
+        
+        // Get the cat color and style
+        const catColor = this.getCatColor(cat);
+        const strokeColor = '#00ff00';
+        const strokeWidth = '1.5';
+        
+        // Create main group
+        const catGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        catGroup.setAttribute('transform', 'translate(50, 50)');
+        
+        // Shadow
+        const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        shadow.setAttribute('cx', '0');
+        shadow.setAttribute('cy', '35');
+        shadow.setAttribute('rx', '25');
+        shadow.setAttribute('ry', '5');
+        shadow.setAttribute('fill', 'rgba(0, 0, 0, 0.2)');
+        catGroup.appendChild(shadow);
+        
+        // Body (sitting position)
+        const body = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        body.setAttribute('d', 'M -15 5 Q -20 25, -15 30 L 15 30 Q 20 25, 15 5 Q 12 -5, 0 -5 Q -12 -5, -15 5 Z');
+        body.setAttribute('fill', catColor);
+        body.setAttribute('stroke', strokeColor);
+        body.setAttribute('stroke-width', strokeWidth);
+        catGroup.appendChild(body);
+        
+        // Front legs
+        const frontLegL = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        frontLegL.setAttribute('cx', '-8');
+        frontLegL.setAttribute('cy', '25');
+        frontLegL.setAttribute('rx', '5');
+        frontLegL.setAttribute('ry', '10');
+        frontLegL.setAttribute('fill', catColor);
+        frontLegL.setAttribute('stroke', strokeColor);
+        frontLegL.setAttribute('stroke-width', strokeWidth);
+        catGroup.appendChild(frontLegL);
+        
+        const frontLegR = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        frontLegR.setAttribute('cx', '8');
+        frontLegR.setAttribute('cy', '25');
+        frontLegR.setAttribute('rx', '5');
+        frontLegR.setAttribute('ry', '10');
+        frontLegR.setAttribute('fill', catColor);
+        frontLegR.setAttribute('stroke', strokeColor);
+        frontLegR.setAttribute('stroke-width', strokeWidth);
+        catGroup.appendChild(frontLegR);
+        
+        // Head
+        const head = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        head.setAttribute('cx', '0');
+        head.setAttribute('cy', '-10');
+        head.setAttribute('r', '18');
+        head.setAttribute('fill', catColor);
+        head.setAttribute('stroke', strokeColor);
+        head.setAttribute('stroke-width', strokeWidth);
+        catGroup.appendChild(head);
+        
+        // Ears
+        const earL = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        earL.setAttribute('d', 'M -15 -20 L -20 -35 L -8 -25 Z');
+        earL.setAttribute('fill', catColor);
+        earL.setAttribute('stroke', strokeColor);
+        earL.setAttribute('stroke-width', strokeWidth);
+        catGroup.appendChild(earL);
+        
+        // Inner ear L
+        const innerEarL = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        innerEarL.setAttribute('d', 'M -14 -24 L -16 -30 L -11 -26 Z');
+        innerEarL.setAttribute('fill', 'rgba(255, 182, 193, 0.5)');
+        catGroup.appendChild(innerEarL);
+        
+        const earR = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        earR.setAttribute('d', 'M 15 -20 L 20 -35 L 8 -25 Z');
+        earR.setAttribute('fill', catColor);
+        earR.setAttribute('stroke', strokeColor);
+        earR.setAttribute('stroke-width', strokeWidth);
+        catGroup.appendChild(earR);
+        
+        // Inner ear R
+        const innerEarR = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        innerEarR.setAttribute('d', 'M 14 -24 L 16 -30 L 11 -26 Z');
+        innerEarR.setAttribute('fill', 'rgba(255, 182, 193, 0.5)');
+        catGroup.appendChild(innerEarR);
+        
+        // Eyes
+        if (cat.asleep) {
+            // Closed eyes
+            const eyeL = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            eyeL.setAttribute('d', 'M -10 -10 Q -7 -8, -4 -10');
+            eyeL.setAttribute('stroke', strokeColor);
+            eyeL.setAttribute('stroke-width', strokeWidth);
+            eyeL.setAttribute('fill', 'none');
+            catGroup.appendChild(eyeL);
+            
+            const eyeR = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            eyeR.setAttribute('d', 'M 4 -10 Q 7 -8, 10 -10');
+            eyeR.setAttribute('stroke', strokeColor);
+            eyeR.setAttribute('stroke-width', strokeWidth);
+            eyeR.setAttribute('fill', 'none');
+            catGroup.appendChild(eyeR);
+        } else {
+            // Open eyes
+            const eyeL = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            eyeL.setAttribute('cx', '-7');
+            eyeL.setAttribute('cy', '-10');
+            eyeL.setAttribute('rx', '4');
+            eyeL.setAttribute('ry', '6');
+            eyeL.setAttribute('fill', '#00ff00');
+            catGroup.appendChild(eyeL);
+            
+            const eyeR = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            eyeR.setAttribute('cx', '7');
+            eyeR.setAttribute('cy', '-10');
+            eyeR.setAttribute('rx', '4');
+            eyeR.setAttribute('ry', '6');
+            eyeR.setAttribute('fill', '#00ff00');
+            catGroup.appendChild(eyeR);
+            
+            // Pupils
+            const pupilL = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            pupilL.setAttribute('cx', '-7');
+            pupilL.setAttribute('cy', '-10');
+            pupilL.setAttribute('rx', '2');
+            pupilL.setAttribute('ry', '3');
+            pupilL.setAttribute('fill', '#000');
+            catGroup.appendChild(pupilL);
+            
+            const pupilR = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            pupilR.setAttribute('cx', '7');
+            pupilR.setAttribute('cy', '-10');
+            pupilR.setAttribute('rx', '2');
+            pupilR.setAttribute('ry', '3');
+            pupilR.setAttribute('fill', '#000');
+            catGroup.appendChild(pupilR);
+        }
+        
+        // Nose
+        const nose = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        nose.setAttribute('d', 'M 0 -2 L -2 0 L 0 1 L 2 0 Z');
+        nose.setAttribute('fill', '#ff69b4');
+        catGroup.appendChild(nose);
+        
+        // Mouth
+        const mouth = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        if (cat.happy > 50) {
+            mouth.setAttribute('d', 'M 0 1 Q -4 3, -6 2 M 0 1 Q 4 3, 6 2');
+        } else {
+            mouth.setAttribute('d', 'M 0 1 Q -4 2, -6 3 M 0 1 Q 4 2, 6 3');
+        }
+        mouth.setAttribute('stroke', strokeColor);
+        mouth.setAttribute('stroke-width', '1');
+        mouth.setAttribute('fill', 'none');
+        catGroup.appendChild(mouth);
+        
+        // Whiskers
+        const whiskerPositions = [
+            { x1: -18, y1: -5, x2: -28, y2: -7 },
+            { x1: -18, y1: -2, x2: -28, y2: -2 },
+            { x1: 18, y1: -5, x2: 28, y2: -7 },
+            { x1: 18, y1: -2, x2: 28, y2: -2 }
+        ];
+        
+        whiskerPositions.forEach(pos => {
+            const whisker = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            whisker.setAttribute('x1', pos.x1);
+            whisker.setAttribute('y1', pos.y1);
+            whisker.setAttribute('x2', pos.x2);
+            whisker.setAttribute('y2', pos.y2);
+            whisker.setAttribute('stroke', strokeColor);
+            whisker.setAttribute('stroke-width', '0.5');
+            whisker.setAttribute('opacity', '0.7');
+            catGroup.appendChild(whisker);
+        });
+        
+        // Paws
+        const pawL = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        pawL.setAttribute('cx', '-8');
+        pawL.setAttribute('cy', '32');
+        pawL.setAttribute('rx', '4');
+        pawL.setAttribute('ry', '2');
+        pawL.setAttribute('fill', catColor);
+        catGroup.appendChild(pawL);
+        
+        const pawR = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        pawR.setAttribute('cx', '8');
+        pawR.setAttribute('cy', '32');
+        pawR.setAttribute('rx', '4');
+        pawR.setAttribute('ry', '2');
+        pawR.setAttribute('fill', catColor);
+        catGroup.appendChild(pawR);
+        
+        // Tail
+        const tail = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        if (cat.happy > 70) {
+            // Happy tail up
+            tail.setAttribute('d', 'M 12 15 Q 25 10, 30 -5 Q 32 -15, 28 -20');
+        } else if (cat.happy > 30) {
+            // Neutral tail
+            tail.setAttribute('d', 'M 12 15 Q 25 20, 35 15');
+        } else {
+            // Sad tail down
+            tail.setAttribute('d', 'M 12 15 Q 20 25, 25 30');
+        }
+        tail.setAttribute('stroke', catColor);
+        tail.setAttribute('stroke-width', '8');
+        tail.setAttribute('fill', 'none');
+        tail.setAttribute('stroke-linecap', 'round');
+        catGroup.appendChild(tail);
+        
+        // Add some stripes/patterns for certain colors
+        if (cat.personality === 'Playful' || cat.personality === 'Mischievous') {
+            for (let i = 0; i < 3; i++) {
+                const stripe = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                stripe.setAttribute('d', `M -10 ${-5 + i * 8} Q 0 ${-7 + i * 8}, 10 ${-5 + i * 8}`);
+                stripe.setAttribute('stroke', 'rgba(0, 0, 0, 0.2)');
+                stripe.setAttribute('stroke-width', '3');
+                stripe.setAttribute('fill', 'none');
+                catGroup.appendChild(stripe);
+            }
+        }
+        
+        // Special features
+        if (cat.specialNeeds?.includes('blind')) {
+            // Sunglasses for blind cats
+            const glasses = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Glasses frame
+            const frame = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            frame.setAttribute('d', 'M -12 -10 Q -7 -12, -2 -10 M 2 -10 Q 7 -12, 12 -10');
+            frame.setAttribute('stroke', '#333');
+            frame.setAttribute('stroke-width', '2');
+            frame.setAttribute('fill', 'none');
+            glasses.appendChild(frame);
+            
+            // Lenses
+            const lensL = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            lensL.setAttribute('cx', '-7');
+            lensL.setAttribute('cy', '-10');
+            lensL.setAttribute('rx', '5');
+            lensL.setAttribute('ry', '6');
+            lensL.setAttribute('fill', '#333');
+            lensL.setAttribute('opacity', '0.8');
+            glasses.appendChild(lensL);
+            
+            const lensR = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            lensR.setAttribute('cx', '7');
+            lensR.setAttribute('cy', '-10');
+            lensR.setAttribute('rx', '5');
+            lensR.setAttribute('ry', '6');
+            lensR.setAttribute('fill', '#333');
+            lensR.setAttribute('opacity', '0.8');
+            glasses.appendChild(lensR);
+            
+            catGroup.appendChild(glasses);
+        }
+        
+        if (cat.specialNeeds?.includes('deaf')) {
+            // Hearing aid indicator
+            const aid = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            aid.setAttribute('cx', '-15');
+            aid.setAttribute('cy', '-25');
+            aid.setAttribute('r', '2');
+            aid.setAttribute('fill', '#ffff00');
+            aid.setAttribute('stroke', '#ff0000');
+            aid.setAttribute('stroke-width', '0.5');
+            catGroup.appendChild(aid);
+        }
+        
+        if (cat.asleep) {
+            // Z's for sleeping
+            const z1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            z1.setAttribute('x', '20');
+            z1.setAttribute('y', '-20');
+            z1.setAttribute('font-size', '12');
+            z1.setAttribute('fill', '#00ff00');
+            z1.setAttribute('font-family', 'monospace');
+            z1.textContent = 'Z';
+            catGroup.appendChild(z1);
+            
+            const z2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            z2.setAttribute('x', '25');
+            z2.setAttribute('y', '-30');
+            z2.setAttribute('font-size', '8');
+            z2.setAttribute('fill', '#00ff00');
+            z2.setAttribute('font-family', 'monospace');
+            z2.textContent = 'z';
+            catGroup.appendChild(z2);
+        }
+        
+        svg.appendChild(catGroup);
+        return svg;
+    }
+    
+    getCatColor(cat) {
+        // Different colors based on cat personality
+        const colorMap = {
+            'Gentle soul': '#D2691E',      // Chocolate
+            'Anxious': '#696969',          // Dim gray
+            'Playful': '#FF8C00',          // Dark orange
+            'Independent': '#2F4F4F',       // Dark slate gray
+            'Timid': '#DDA0DD',           // Plum
+            'Aloof': '#483D8B',           // Dark slate blue
+            'Aggressive': '#B22222',       // Fire brick
+            'Clingy': '#FFB6C1',          // Light pink
+            'Mischievous': '#FF6347'       // Tomato
+        };
+        
+        // Special cat-specific colors
+        if (cat.name === 'Snowball') return '#F5F5F5'; // White
+        if (cat.name === 'Shadow') return '#1C1C1C';   // Very dark gray
+        if (cat.name === 'Ginger') return '#FF8C00';   // Orange
+        
+        return colorMap[cat.personality] || '#8B4513'; // Default brown
+    }
+    
+    putCatToSleep(catId) {
+        const cat = this.cats[catId];
+        
+        if (cat.happy < 50) {
+            this.displayMessage(`${cat.name} is too unhappy to sleep!`);
+            return;
+        }
+        
+        if (this.gameState.energy < 5) {
+            this.displayMessage("You're too tired to put cats to bed...");
+            return;
+        }
+        
+        cat.asleep = true;
+        this.displayMessage(`💤 You gently put ${cat.name} to sleep in the ${this.rooms[cat.room].name}.`);
+        this.useEnergy(5, 'putting cat to sleep');
+        this.updateScore(5);
+        
+        // Check if all cats are asleep
+        const awakeCats = Object.values(this.cats).filter(c => !c.asleep && !c.missing);
+        if (awakeCats.length === 0) {
+            this.displayMessage("✨ All cats are peacefully asleep! Great job!");
+            this.updateScore(20);
+        }
+        
+        this.renderRooms();
     }
     
     moveCat(catId, newRoomId) {
@@ -811,7 +1222,7 @@ class CatLifeGame {
         
         this.displayMessage(`You moved ${cat.name} to the ${this.rooms[newRoomId].name}.`);
         this.useEnergy(3, 'moving cat');
-        this.gameState.score += 2;
+        this.updateScore(2);
         
         // Progress time with action
         this.progressTimeWithAction();
@@ -866,7 +1277,7 @@ class CatLifeGame {
             this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
             cat.room = 'missing';
             cat.missing = true;
-            this.gameState.score -= 20;
+            this.updateScore(-20);
             this.useEnergy(3, 'trying to call cat');
             this.renderRooms();
             return;
@@ -883,7 +1294,7 @@ class CatLifeGame {
         
         this.displayMessage(`${cat.name} comes inside happily.`);
         this.useEnergy(3, 'letting cat in');
-        this.gameState.score += 3;
+        this.updateScore(3);
         
         // Progress time with action
         this.progressTimeWithAction();
@@ -910,7 +1321,7 @@ class CatLifeGame {
                 this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
                 cat.room = 'missing';
                 cat.missing = true;
-                this.gameState.score -= 25;
+                this.updateScore(-25);
             } else {
                 // Found the cat!
                 this.displayMessage(`😅 You found ${cat.name} hiding under a bush!`);
@@ -919,7 +1330,7 @@ class CatLifeGame {
                 cat.room = 'bedroom'; // Put them in bedroom for the night
                 this.rooms.bedroom.cats.push(catId);
                 cat.wontComeBack = false;
-                this.gameState.score += 5;
+                this.updateScore(5);
             }
         } else {
             // Not enough energy to search
@@ -1051,7 +1462,8 @@ class CatLifeGame {
         cat.fed = true;
         cat.hunger = Math.max(0, cat.hunger - 50);
         cat.happy += 10;
-        this.gameState.score += 5;
+        this.updateScore(5);
+        this.dailyStats.catsFed++;
         
         this.displayMessage(`You fed ${cat.name}. They purr contentedly.`);
         this.useEnergy(5, 'feeding');
@@ -1087,9 +1499,10 @@ class CatLifeGame {
             const mess = room.messes[messIndex];
             room.messes.splice(messIndex, 1);
             
-            this.gameState.score += 3;
+            this.updateScore(3);
             this.displayMessage(`You cleaned up the ${mess} in the ${room.name}!`);
             this.useEnergy(4, 'cleaning');
+            this.dailyStats.messesCleaned++;
             
             // Progress time with action
             this.progressTimeWithAction();
@@ -1113,7 +1526,7 @@ class CatLifeGame {
         });
         
         if (cleaned > 0) {
-            this.gameState.score += cleaned * 3;
+            this.updateScore(cleaned * 3);
             this.displayMessage(`You cleaned up ${cleaned} mess${cleaned > 1 ? 'es' : ''}. Much better!`);
             
             Object.values(this.cats).forEach(cat => {
@@ -1148,10 +1561,11 @@ class CatLifeGame {
         const cat = this.cats[catId];
         cat.happy = Math.min(100, cat.happy + 20);
         if (cat.aggression) cat.aggression = Math.max(0, cat.aggression - 15);
-        this.gameState.score += 3;
+        this.updateScore(3);
         
         this.displayMessage(`You play with ${cat.name}. They seem much happier!`);
         this.useEnergy(8, 'playing');
+        this.dailyStats.playSessions++;
         
         // Progress time with action
         this.progressTimeWithAction();
@@ -1190,7 +1604,7 @@ class CatLifeGame {
             () => {
                 this.displayMessage("☀️ A sunbeam appears! All cats are slightly happier.");
                 Object.values(this.cats).forEach(cat => cat.happy += 5);
-                this.gameState.score += 2;
+                this.updateScore(2);
             },
             () => {
                 // Tink needs extra attention
@@ -1263,7 +1677,8 @@ class CatLifeGame {
         });
         
         if (this.gameState.time === "Evening") {
-            this.displayMessage("The cats are getting sleepy. One more feeding before bed!");
+            this.displayMessage("🌅 Evening arrives! It's bedtime at 10 PM - make sure all happy cats are asleep!");
+            this.displayMessage("😴 Only cats with 50+ happiness can be put to sleep.");
             Object.values(this.cats).forEach(cat => cat.fed = false);
             
             // Check for cats outside
@@ -1277,7 +1692,43 @@ class CatLifeGame {
         }
         
         if (this.gameState.time === "Night") {
-            this.displayMessage("🌙 The cats are settling down for the night...");
+            this.displayMessage("🌙 It's 10 PM - Bedtime!");
+            
+            // Stop time progression and show summary
+            this.stopTimeProgression();
+            this.autoProgress = false;
+            
+            // Check for cats not asleep
+            const awakeCats = Object.entries(this.cats).filter(([id, cat]) => 
+                !cat.asleep && !cat.missing && cat.room !== 'outside'
+            );
+            
+            if (awakeCats.length > 0) {
+                this.displayMessage(`😱 ${awakeCats.length} cat(s) are still awake at bedtime!`);
+                let penalty = 0;
+                
+                awakeCats.forEach(([catId, cat]) => {
+                    if (cat.happy >= 50) {
+                        // Happy cats that could have been put to sleep
+                        this.displayMessage(`❌ ${cat.name} was happy enough to sleep but is still awake! (-10 points)`);
+                        penalty += 10;
+                    } else {
+                        // Unhappy cats
+                        this.displayMessage(`😿 ${cat.name} is too unhappy to sleep! (-5 points)`);
+                        penalty += 5;
+                    }
+                    cat.happy -= 20; // All cats lose happiness from poor sleep
+                });
+                
+                this.gameState.score -= penalty;
+                this.displayMessage(`💔 Total bedtime penalty: -${penalty} points`);
+            } else {
+                const sleepingCats = Object.values(this.cats).filter(cat => cat.asleep && !cat.missing);
+                if (sleepingCats.length === Object.values(this.cats).filter(cat => !cat.missing).length) {
+                    this.displayMessage("✨ Perfect! All cats are peacefully asleep! (+10 bonus points)");
+                    this.updateScore(10);
+                }
+            }
             
             // Force search for any cats still outside
             const catsOutside = this.outside.cats.filter(catId => !this.cats[catId].missing);
@@ -1290,12 +1741,157 @@ class CatLifeGame {
                 });
             }
             
-            this.endDay();
+            // Show bedtime summary instead of ending day
+            this.showBedtimeSummary();
         }
         
         this.updateDisplay();
         this.renderRooms();
         this.checkConflicts();
+    }
+    
+    showBedtimeSummary() {
+        // Calculate sleep score
+        const awakeCats = Object.entries(this.cats).filter(([id, cat]) => 
+            !cat.asleep && !cat.missing && cat.room !== 'outside'
+        );
+        
+        let sleepPenalty = 0;
+        awakeCats.forEach(([catId, cat]) => {
+            if (cat.happy >= 50) {
+                sleepPenalty += 10;
+            } else {
+                sleepPenalty += 5;
+            }
+        });
+        
+        const sleepingCats = Object.values(this.cats).filter(cat => cat.asleep && !cat.missing);
+        let sleepBonus = 0;
+        if (sleepingCats.length === Object.values(this.cats).filter(cat => !cat.missing).length) {
+            sleepBonus = 10;
+        }
+        
+        this.dailyStats.sleepScore = sleepBonus - sleepPenalty;
+        
+        // Calculate happiness average
+        const aliveCats = Object.values(this.cats).filter(cat => !cat.missing);
+        const avgHappiness = Math.round(
+            aliveCats.reduce((sum, cat) => sum + cat.happy, 0) / aliveCats.length
+        );
+        
+        // Update sleep status HTML
+        const sleepStatusHTML = this.generateSleepStatusHTML();
+        document.getElementById('sleep-status').innerHTML = sleepStatusHTML;
+        
+        // Update statistics
+        document.getElementById('summary-day').textContent = this.gameState.day;
+        document.getElementById('cats-fed-stat').textContent = `${this.dailyStats.catsFed}/${aliveCats.length}`;
+        document.getElementById('messes-cleaned-stat').textContent = this.dailyStats.messesCleaned;
+        document.getElementById('play-sessions-stat').textContent = this.dailyStats.playSessions;
+        document.getElementById('energy-used-stat').textContent = Math.round(this.dailyStats.energyUsed);
+        document.getElementById('happiness-avg-stat').textContent = `${avgHappiness}%`;
+        document.getElementById('conflicts-stat').textContent = this.dailyStats.conflictsOccurred;
+        
+        // Update score breakdown
+        const dayScore = this.gameState.score - this.dailyStats.dayStartScore;
+        const baseScore = dayScore - this.dailyStats.sleepScore;
+        
+        document.getElementById('base-score').textContent = baseScore >= 0 ? `+${baseScore}` : baseScore;
+        document.getElementById('sleep-score').textContent = this.dailyStats.sleepScore >= 0 ? `+${this.dailyStats.sleepScore}` : this.dailyStats.sleepScore;
+        document.getElementById('bonus-score').textContent = `+${this.dailyStats.bonusScore}`;
+        document.getElementById('day-total-score').textContent = dayScore;
+        
+        // Show the modal
+        document.getElementById('bedtime-summary').classList.add('active');
+        
+        // Add event listener for go to sleep button
+        const goToSleepBtn = document.getElementById('go-to-sleep-btn');
+        goToSleepBtn.onclick = () => {
+            document.getElementById('bedtime-summary').classList.remove('active');
+            this.startNewDay();
+        };
+    }
+    
+    generateSleepStatusHTML() {
+        let html = '<div class="sleep-status-grid">';
+        
+        Object.entries(this.cats).forEach(([catId, cat]) => {
+            if (!cat.missing) {
+                let status = '';
+                let statusClass = '';
+                
+                if (cat.asleep) {
+                    status = '😴 Sleeping peacefully';
+                    statusClass = 'sleeping';
+                } else if (cat.room === 'outside') {
+                    status = '🌙 Still outside!';
+                    statusClass = 'outside';
+                } else if (cat.happy >= 50) {
+                    status = '😟 Awake (could sleep)';
+                    statusClass = 'awake-happy';
+                } else {
+                    status = '😿 Too unhappy to sleep';
+                    statusClass = 'awake-unhappy';
+                }
+                
+                html += `
+                    <div class="sleep-status-item ${statusClass}">
+                        <span class="cat-name">${cat.name}:</span>
+                        <span class="sleep-status">${status}</span>
+                    </div>
+                `;
+            }
+        });
+        
+        html += '</div>';
+        return html;
+    }
+    
+    startNewDay() {
+        // Reset for new day
+        this.gameState.day++;
+        this.gameState.time = "Morning";
+        this.currentTimeIndex = 0;
+        this.currentActions = 0;
+        
+        // Reset daily stats
+        this.dailyStats = {
+            catsFed: 0,
+            messesCleaned: 0,
+            playSessions: 0,
+            energyUsed: 0,
+            conflictsOccurred: 0,
+            dayStartScore: this.gameState.score,
+            sleepScore: 0,
+            bonusScore: 0
+        };
+        
+        // Reset cats
+        Object.values(this.cats).forEach(cat => {
+            cat.fed = false;
+            cat.asleep = false;
+            cat.hunger += 30;
+            if (cat.happy > 0) cat.happy = Math.max(10, cat.happy - 10);
+        });
+        
+        // Restore some energy
+        this.gameState.energy = Math.min(this.gameState.maxEnergy, this.gameState.energy + 50);
+        
+        // Clear messes
+        Object.values(this.rooms).forEach(room => {
+            room.messes = [];
+        });
+        
+        this.displayMessage(`\n🌅 Day ${this.gameState.day} begins!`);
+        this.displayMessage("Good morning! Time to take care of your special needs cats.");
+        
+        // Resume time progression
+        this.autoProgress = true;
+        this.startTimeProgression();
+        this.startClockTicker();
+        
+        this.updateDisplay();
+        this.renderRooms();
     }
     
     endDay() {
@@ -1325,7 +1921,7 @@ class CatLifeGame {
             summary += `\n🧹 ${totalMesses} messes left uncleaned.\n`;
         }
         
-        this.gameState.score += dayScore;
+        this.updateScore(dayScore);
         summary += `\n🏆 Day Score: ${dayScore}`;
         summary += `\n🎯 Total Score: ${this.gameState.score}`;
         
@@ -1343,7 +1939,7 @@ class CatLifeGame {
         const allFed = Object.values(this.cats).every(cat => cat.fed);
         if (allFed && this.gameState.time === "Morning") {
             this.displayMessage("\n✨ All cats have been fed! Great job!");
-            this.gameState.score += 10;
+            this.updateScore(10);
             setTimeout(() => this.advanceTime(), 2000);
         }
     }
@@ -1412,7 +2008,7 @@ Cat Conflicts:
     updateDisplay() {
         document.getElementById('day').textContent = `Day: ${this.gameState.day}`;
         document.getElementById('time').textContent = `Time: ${this.gameState.time}`;
-        document.getElementById('score').textContent = `Score: ${this.gameState.score}`;
+        document.getElementById('score').textContent = `Score: ${this.gameState.score}${this.gameMode === 'challenge' ? ' (Challenge)' : ' (Endless)'}`;
         
         // Update energy bar
         const energyBar = document.getElementById('energy-bar');
@@ -1470,11 +2066,61 @@ Cat Conflicts:
         this.gameState.energy -= actualCost;
         if (this.gameState.energy < 0) this.gameState.energy = 0;
         
+        this.dailyStats.energyUsed += actualCost;
+        
         if (actualCost > 0) {
             this.displayMessage(`[-${actualCost} energy]`, 'energy');
         }
+    }
+    
+    updateScore(points) {
+        this.gameState.score += points;
+        document.getElementById('score').textContent = `Score: ${this.gameState.score}`;
         
-        this.updateDisplay();
+        // Check for game over in Challenge Mode
+        if (this.gameMode === 'challenge' && this.gameState.score <= -50 && !this.gameState.gameOver) {
+            this.triggerGameOver();
+        }
+    }
+    
+    triggerGameOver() {
+        this.gameState.gameOver = true;
+        this.gameState.paused = true;
+        
+        // Stop the game loop
+        if (this.gameInterval) {
+            clearInterval(this.gameInterval);
+        }
+        
+        // Stop time progression
+        this.stopTimeProgression();
+        
+        // Show game over screen
+        this.showGameOverScreen();
+    }
+    
+    showGameOverScreen() {
+        // Create game over modal
+        const gameOverHTML = `
+            <div id="game-over-modal" class="game-over-overlay active">
+                <div class="game-over-modal">
+                    <div class="game-over-header">
+                        <h2>💔 GAME OVER 💔</h2>
+                    </div>
+                    <div class="game-over-body">
+                        <p class="game-over-message">Your score dropped below -50!</p>
+                        <p class="final-stats">You survived <strong>${this.gameState.day}</strong> days.</p>
+                        <p class="final-score">Final Score: <strong>${this.gameState.score}</strong></p>
+                        
+                        <div class="game-over-actions">
+                            <button onclick="location.reload()" class="restart-btn">Try Again</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', gameOverHTML);
     }
 }
 
@@ -1533,39 +2179,82 @@ class HighScoreManager {
 
 // Start Screen Handler
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, setting up start screen...');
+    
     const highScoreManager = new HighScoreManager();
     highScoreManager.displayHighScores();
     
     let selectedDifficulty = 'normal';
+    let selectedGameMode = 'challenge';
     let gameInstance = null;
     
     // Difficulty button handlers
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+    const diffBtns = document.querySelectorAll('.diff-btn');
+    console.log('Difficulty buttons found:', diffBtns.length);
+    
+    diffBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Difficulty clicked:', btn.dataset.difficulty);
             document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedDifficulty = btn.dataset.difficulty;
         });
     });
     
-    // Start game button
-    document.getElementById('start-game-btn').addEventListener('click', () => {
-        const playerName = document.getElementById('player-name').value.trim() || 'Cat Lover';
-        
-        // Hide start screen
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('game-container').style.display = 'block';
-        
-        // Create new game instance
-        gameInstance = new CatLifeGame(playerName, selectedDifficulty);
-        
-        // Override endDay to save high score
-        const originalEndDay = gameInstance.endDay.bind(gameInstance);
-        gameInstance.endDay = function() {
-            originalEndDay();
-            highScoreManager.addScore(playerName, this.gameState.score, selectedDifficulty);
-        };
+    // Game mode button handlers
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    console.log('Mode buttons found:', modeBtns.length);
+    
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Mode clicked:', btn.dataset.mode);
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedGameMode = btn.dataset.mode;
+        });
     });
+    
+    // Start game button
+    const startBtn = document.getElementById('start-game-btn');
+    console.log('Start button found:', startBtn);
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Start button clicked!');
+            console.log('Selected difficulty:', selectedDifficulty);
+            console.log('Selected game mode:', selectedGameMode);
+            
+            try {
+                const playerName = document.getElementById('player-name').value.trim() || 'Cat Lover';
+                console.log('Player name:', playerName);
+                
+                // Hide start screen
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('game-container').style.display = 'block';
+                
+                // Create new game instance
+                gameInstance = new CatLifeGame(playerName, selectedDifficulty, selectedGameMode);
+                console.log('Game instance created successfully!');
+                
+                // Override endDay to save high score
+                const originalEndDay = gameInstance.endDay.bind(gameInstance);
+                gameInstance.endDay = function() {
+                    originalEndDay();
+                    highScoreManager.addScore(playerName, this.gameState.score, selectedDifficulty);
+                };
+            } catch (error) {
+                console.error('Error starting game:', error);
+                alert('Error starting game: ' + error.message);
+            }
+        });
+    } else {
+        console.error('Start button not found!');
+    }
     
     // Allow Enter key to start game
     document.getElementById('player-name').addEventListener('keypress', (e) => {
