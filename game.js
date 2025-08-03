@@ -302,121 +302,292 @@ class CatLifeGame {
         const container = document.getElementById('rooms-container');
         container.innerHTML = '';
         
-        // Create house container
-        const house = document.createElement('div');
-        house.className = 'house';
+        // Create SVG element
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '1200');
+        svg.setAttribute('height', '700');
+        svg.setAttribute('viewBox', '0 0 1200 700');
+        svg.setAttribute('style', 'display: block; width: 100%; height: 100%; background-color: #001a00;');
         
-        // Render rooms inside the house
-        Object.entries(this.rooms).forEach(([roomId, room]) => {
-            const roomDiv = document.createElement('div');
-            roomDiv.className = 'room';
-            roomDiv.id = `room-${roomId}`;
-            
-            // Check for conflicts in this room
+        
+        // Add defs for patterns and styles
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        
+        // Grid pattern
+        const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+        pattern.setAttribute('id', 'grid');
+        pattern.setAttribute('width', '20');
+        pattern.setAttribute('height', '20');
+        pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+        
+        const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line1.setAttribute('x1', '0');
+        line1.setAttribute('y1', '0');
+        line1.setAttribute('x2', '0');
+        line1.setAttribute('y2', '20');
+        line1.setAttribute('stroke', '#00ff00');
+        line1.setAttribute('stroke-opacity', '0.2');
+        
+        const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line2.setAttribute('x1', '0');
+        line2.setAttribute('y1', '0');
+        line2.setAttribute('x2', '20');
+        line2.setAttribute('y2', '0');
+        line2.setAttribute('stroke', '#00ff00');
+        line2.setAttribute('stroke-opacity', '0.2');
+        
+        pattern.appendChild(line1);
+        pattern.appendChild(line2);
+        defs.appendChild(pattern);
+        svg.appendChild(defs);
+        
+        // Background
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('width', '1200');
+        bg.setAttribute('height', '700');
+        bg.setAttribute('fill', 'url(#grid)');
+        svg.appendChild(bg);
+        
+        // Room definitions with SVG paths - with proper spacing
+        const roomDefs = {
+            kitchen: { x: 50, y: 50, width: 350, height: 250 },
+            livingroom: { x: 420, y: 50, width: 480, height: 350 },
+            bedroom: { x: 50, y: 320, width: 350, height: 250 },
+            bathroom: { x: 420, y: 420, width: 480, height: 150 }
+        };
+        
+        // Draw rooms
+        Object.entries(roomDefs).forEach(([roomId, coords]) => {
+            const room = this.rooms[roomId];
             const hasConflict = this.checkRoomConflicts(roomId);
-            if (hasConflict) {
-                roomDiv.classList.add('has-conflict');
-            }
             
-            const header = document.createElement('div');
-            header.className = 'room-header';
-            header.textContent = room.name;
-            roomDiv.appendChild(header);
+            // Room rectangle
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', coords.x);
+            rect.setAttribute('y', coords.y);
+            rect.setAttribute('width', coords.width);
+            rect.setAttribute('height', coords.height);
+            rect.setAttribute('fill', hasConflict ? 'rgba(255,0,0,0.1)' : 'transparent');
+            rect.setAttribute('stroke', hasConflict ? '#ff0000' : '#00ff00');
+            rect.setAttribute('stroke-width', '2');
+            rect.setAttribute('id', `room-${roomId}-rect`);
+            svg.appendChild(rect);
             
-            const catsContainer = document.createElement('div');
-            catsContainer.className = 'cats-in-room';
-            
-            room.cats.forEach(catId => {
-                const cat = this.cats[catId];
-                if (cat.missing) return; // Skip missing cats
-                
-                const catDiv = this.createCatElement(catId, cat);
-                
-                if (hasConflict && this.isCatInConflict(catId, roomId)) {
-                    catDiv.classList.add('fighting');
-                }
-                
-                
-                catsContainer.appendChild(catDiv);
-            });
-            
-            // Show messes in room as visual accidents
-            const messContainer = document.createElement('div');
-            messContainer.className = 'mess-container';
-            
-            room.messes.forEach((mess, index) => {
-                const messDiv = document.createElement('div');
-                messDiv.className = 'mess-visual';
-                messDiv.id = `mess-${roomId}-${index}`;
-                
-                if (mess.includes('poop')) {
-                    messDiv.innerHTML = '💩';
-                    messDiv.classList.add('poop');
-                } else if (mess.includes('pee')) {
-                    messDiv.innerHTML = '💦';
-                    messDiv.classList.add('pee');
-                }
-                
-                messDiv.title = 'Click to clean!';
-                messDiv.addEventListener('click', () => this.cleanMess(roomId, index));
-                messContainer.appendChild(messDiv);
-            });
-            
-            if (room.messes.length > 0) {
-                roomDiv.appendChild(messContainer);
-            }
-            
-            roomDiv.appendChild(catsContainer);
-            house.appendChild(roomDiv);
+            // Room label
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', coords.x + 10);
+            text.setAttribute('y', coords.y + 20);
+            text.setAttribute('fill', '#00ff00');
+            text.setAttribute('font-size', '14');
+            text.setAttribute('font-family', 'Courier New, monospace');
+            text.setAttribute('opacity', '0.8');
+            text.textContent = room.name.toUpperCase();
+            svg.appendChild(text);
         });
         
-        // Add front door
-        const frontDoor = document.createElement('div');
-        frontDoor.className = 'front-door' + (this.doorOpen ? ' open' : '');
-        frontDoor.title = this.doorOpen ? 'Click to close door' : 'Click to open door';
-        frontDoor.addEventListener('click', () => this.toggleDoor());
-        house.appendChild(frontDoor);
+        // Draw doorways
+        this.drawDoorways(svg);
         
+        // Draw front door in living room
+        if (!this.doorOpen) {
+            const door = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            door.setAttribute('x1', '650');
+            door.setAttribute('y1', '50');
+            door.setAttribute('x2', '750');
+            door.setAttribute('y2', '50');
+            door.setAttribute('stroke', '#00ff00');
+            door.setAttribute('stroke-width', '8');
+            door.setAttribute('class', 'svg-door');
+            door.style.cursor = 'pointer';
+            door.style.pointerEvents = 'all';
+            door.addEventListener('click', () => this.toggleDoor());
+            svg.appendChild(door);
+            
+            const doorLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            doorLabel.setAttribute('x', '700');
+            doorLabel.setAttribute('y', '45');
+            doorLabel.setAttribute('text-anchor', 'middle');
+            doorLabel.setAttribute('fill', '#00ff00');
+            doorLabel.setAttribute('font-size', '10');
+            doorLabel.textContent = 'DOOR';
+            svg.appendChild(doorLabel);
+        } else {
+            const doorOpen = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            doorOpen.setAttribute('x', '650');
+            doorOpen.setAttribute('y', '40');
+            doorOpen.setAttribute('width', '100');
+            doorOpen.setAttribute('height', '20');
+            doorOpen.setAttribute('fill', 'rgba(255,0,0,0.2)');
+            doorOpen.setAttribute('stroke', '#ff0000');
+            doorOpen.style.cursor = 'pointer';
+            doorOpen.style.pointerEvents = 'all';
+            doorOpen.addEventListener('click', () => this.toggleDoor());
+            svg.appendChild(doorOpen);
+            
+            const doorLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            doorLabel.setAttribute('x', '700');
+            doorLabel.setAttribute('y', '55');
+            doorLabel.setAttribute('text-anchor', 'middle');
+            doorLabel.setAttribute('fill', '#ff0000');
+            doorLabel.setAttribute('font-size', '10');
+            doorLabel.textContent = 'OPEN';
+            svg.appendChild(doorLabel);
+        }
         
-        container.appendChild(house);
+        container.appendChild(svg);
+        
+        // Create room containers for cats and messes as overlay
+        const overlayContainer = document.createElement('div');
+        overlayContainer.style.position = 'absolute';
+        overlayContainer.style.top = '0';
+        overlayContainer.style.left = '0';
+        overlayContainer.style.width = '100%';
+        overlayContainer.style.height = '100%';
+        overlayContainer.style.zIndex = '10';
+        
+        Object.entries(roomDefs).forEach(([roomId, coords]) => {
+            const roomContainer = document.createElement('div');
+            roomContainer.className = 'room-container';
+            roomContainer.id = `room-${roomId}`;
+            roomContainer.style.position = 'absolute';
+            roomContainer.style.left = coords.x + 'px';
+            roomContainer.style.top = coords.y + 'px';
+            roomContainer.style.width = coords.width + 'px';
+            roomContainer.style.height = coords.height + 'px';
+            
+            this.renderRoomContents(roomId, roomContainer);
+            overlayContainer.appendChild(roomContainer);
+        });
+        
+        container.appendChild(overlayContainer);
         
         // Create outside area
         const outsideArea = document.createElement('div');
         outsideArea.className = 'outside-area';
+        outsideArea.style.position = 'absolute';
+        outsideArea.style.bottom = '0';
+        outsideArea.style.left = '0';
+        outsideArea.style.width = '100%';
+        outsideArea.style.height = '150px';
+        outsideArea.style.zIndex = '5';
         
         // Add outside label
         const outsideLabel = document.createElement('div');
-        outsideLabel.className = 'blueprint-label label-outside';
+        outsideLabel.className = 'label-outside';
         outsideLabel.textContent = 'OUTSIDE';
         outsideArea.appendChild(outsideLabel);
         
-        // Add ground
-        const ground = document.createElement('div');
-        ground.className = 'outside-ground';
-        outsideArea.appendChild(ground);
+        // Create container for cats outside
+        const outsideCatsContainer = document.createElement('div');
+        outsideCatsContainer.className = 'outside-cats-container';
+        outsideCatsContainer.style.position = 'absolute';
+        outsideCatsContainer.style.bottom = '20px';
+        outsideCatsContainer.style.left = '50%';
+        outsideCatsContainer.style.transform = 'translateX(-50%)';
+        outsideCatsContainer.style.display = 'flex';
+        outsideCatsContainer.style.gap = '20px';
         
-        
-        // Add cats roaming outside
-        this.outside.cats.forEach((catId, index) => {
+        // Render cats that are outside
+        this.outside.cats.forEach(catId => {
             const cat = this.cats[catId];
-            if (!cat.missing) {
-                const catDiv = this.createCatElement(catId, cat);
-                catDiv.classList.add('cat-outside');
-                catDiv.style.left = `${100 + index * 150}px`;
-                if (cat.wontComeBack) {
-                    catDiv.classList.add('wandering');
-                }
-                outsideArea.appendChild(catDiv);
-            }
+            const catDiv = this.createCatElement(catId, cat);
+            catDiv.classList.add('cat-outside');
+            outsideCatsContainer.appendChild(catDiv);
         });
         
-        container.appendChild(outsideArea);
+        outsideArea.appendChild(outsideCatsContainer);
+        overlayContainer.appendChild(outsideArea);
+    }
+    
+    drawDoorways(svg) {
+        // Kitchen to Living Room doorway
+        const door1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        door1.setAttribute('x1', '400');
+        door1.setAttribute('y1', '150');
+        door1.setAttribute('x2', '420');
+        door1.setAttribute('y2', '150');
+        door1.setAttribute('stroke', '#00ff00');
+        door1.setAttribute('stroke-width', '2');
+        door1.setAttribute('stroke-dasharray', '5,5');
+        svg.appendChild(door1);
+        
+        // Kitchen to Bedroom doorway
+        const door2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        door2.setAttribute('x1', '200');
+        door2.setAttribute('y1', '300');
+        door2.setAttribute('x2', '200');
+        door2.setAttribute('y2', '320');
+        door2.setAttribute('stroke', '#00ff00');
+        door2.setAttribute('stroke-width', '2');
+        door2.setAttribute('stroke-dasharray', '5,5');
+        svg.appendChild(door2);
+        
+        // Living Room to Bathroom doorway
+        const door3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        door3.setAttribute('x1', '660');
+        door3.setAttribute('y1', '400');
+        door3.setAttribute('x2', '660');
+        door3.setAttribute('y2', '420');
+        door3.setAttribute('stroke', '#00ff00');
+        door3.setAttribute('stroke-width', '2');
+        door3.setAttribute('stroke-dasharray', '5,5');
+        svg.appendChild(door3);
+    }
+    
+    renderRoomContents(roomId, container) {
+        const room = this.rooms[roomId];
+        
+        // Create cats container
+        const catsContainer = document.createElement('div');
+        catsContainer.className = 'cats-in-room';
+        catsContainer.style.pointerEvents = 'all';
+        
+        room.cats.forEach(catId => {
+            const cat = this.cats[catId];
+            if (cat.missing) return;
+            
+            const catDiv = this.createCatElement(catId, cat);
+            
+            if (this.checkRoomConflicts(roomId) && this.isCatInConflict(catId, roomId)) {
+                catDiv.classList.add('fighting');
+            }
+            
+            catsContainer.appendChild(catDiv);
+        });
+        
+        container.appendChild(catsContainer);
+        
+        // Show messes
+        const messContainer = document.createElement('div');
+        messContainer.className = 'mess-container';
+        
+        room.messes.forEach((mess, index) => {
+            const messDiv = document.createElement('div');
+            messDiv.className = 'mess-visual';
+            messDiv.id = `mess-${roomId}-${index}`;
+            
+            if (mess.includes('poop')) {
+                messDiv.innerHTML = '💩';
+                messDiv.classList.add('poop');
+            } else if (mess.includes('pee')) {
+                messDiv.innerHTML = '💦';
+                messDiv.classList.add('pee');
+            }
+            
+            messDiv.title = 'Click to clean!';
+            messDiv.addEventListener('click', () => this.cleanMess(roomId, index));
+            messContainer.appendChild(messDiv);
+        });
+        
+        container.appendChild(messContainer);
     }
     
     createCatElement(catId, cat) {
         const catDiv = document.createElement('div');
         catDiv.className = 'cat-icon';
         catDiv.id = `cat-${catId}`;
+        catDiv.style.pointerEvents = 'all';
+        catDiv.style.cursor = 'pointer';
         
         if (this.gameState.selectedCat === catId) {
             catDiv.classList.add('selected');
@@ -432,7 +603,10 @@ class CatLifeGame {
             <div class="cat-mood">${this.getCatMood(cat)}</div>
         `;
         
-        catDiv.addEventListener('click', () => this.selectCat(catId));
+        catDiv.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectCat(catId);
+        });
         return catDiv;
     }
     
@@ -702,9 +876,9 @@ class CatLifeGame {
         this.outside.cats = this.outside.cats.filter(id => id !== catId);
         this.outside.catsWaitingToComeIn = this.outside.catsWaitingToComeIn.filter(id => id !== catId);
         
-        // Add to kitchen by default
-        cat.room = 'kitchen';
-        this.rooms.kitchen.cats.push(catId);
+        // Add to living room (where the door is)
+        cat.room = 'livingroom';
+        this.rooms.livingroom.cats.push(catId);
         cat.wontComeBack = false;
         
         this.displayMessage(`${cat.name} comes inside happily.`);
